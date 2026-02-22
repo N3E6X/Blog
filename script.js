@@ -55,6 +55,31 @@ function setupTheme() {
 
 function setupRouter() {
     window.addEventListener('hashchange', handleRoute);
+    
+    // Handle anchor links within posts
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+        
+        const href = link.getAttribute('href');
+        
+        // Handle footnote links (internal anchors)
+        if (href && href.startsWith('#') && !href.startsWith('#/')) {
+            const targetId = href.slice(1);
+            const target = document.getElementById(targetId);
+            
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Update URL without triggering route change
+                const currentHash = window.location.hash;
+                if (currentHash.includes('#/post/')) {
+                    history.replaceState(null, '', currentHash.split('#')[0] + href);
+                }
+            }
+        }
+    });
 }
 
 function handleRoute() {
@@ -219,7 +244,6 @@ function parseMarkdown(text) {
     let inTable = false;
     let tableLines = [];
     
-    // Define inline processing function
     const processInline = (str) => {
         // Footnotes - convert [^1] to superscript links
         str = str.replace(/\[\^(\w+)\]/g, (match, id) => {
@@ -456,7 +480,7 @@ function parseMarkdown(text) {
         html += '<div class="footnotes">\n<ol>\n';
         footnotes.forEach(fn => {
             html += `<li id="fn-${fn.id}">
-                <p>${processInline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>��</a></p>
+                <p>${processInline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>↩</a></p>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
@@ -476,11 +500,9 @@ function parseTable(lines, inlineProcessor) {
             .map(cell => cell.trim());
     });
     
-    // Check for separator line
     const hasSeparator = rows[1] && rows[1].every(cell => /^:?-+:?$/.test(cell));
     
     if (!hasSeparator) {
-        // Not a valid table, treat as paragraphs
         return lines.map(line => `<p>${inlineProcessor(line)}</p>\n`).join('');
     }
     
@@ -533,7 +555,7 @@ function renderHome() {
     if (!state.posts.length) {
         app.innerHTML = `
             <div class="state fade-in">
-                <div class="state__icon">📝</div>
+                <div class="state__icon">✎</div>
                 <h1 class="state__title">No posts yet</h1>
                 <p class="state__desc">Add markdown files to your posts/ directory to get started.</p>
             </div>
@@ -604,7 +626,7 @@ function renderPost(slug) {
             </aside>
             
             <article class="post-content">
-                <a href="#/" class="post__back">← Back</a>
+                <a href="#/" class="post__back">Back</a>
                 <header class="post__header">
                     <div class="post__meta">
                         <span>${formatDate(post.date)}</span>
@@ -673,7 +695,6 @@ function setupTOCHighlight() {
         });
     });
     
-    // Highlight on scroll
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -737,7 +758,6 @@ function copyCode(button) {
     });
 }
 
-// Make it globally available
 window.copyCode = copyCode;
 
 /* =============================================
