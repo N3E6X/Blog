@@ -950,7 +950,7 @@ button {
 }
 
 /* =============================================
-   FOOTNOTES — ULTRA SLEEK
+   FOOTNOTES / REFERENCES — BALANCED & SLEEK
    ============================================= */
 
 /* Footnote Reference in Text */
@@ -984,112 +984,6 @@ button {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Footnotes Section */
-.article .footnotes {
-    margin-top: var(--space-16);
-    padding: var(--space-8);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-}
-
-.article .footnotes-title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-bold);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: var(--space-6);
-    padding-bottom: var(--space-4);
-    border-bottom: 1px solid var(--border);
-}
-
-.article .footnotes-title i {
-    font-size: 0.625rem;
-}
-
-.article .footnotes ol {
-    list-style: none;
-    counter-reset: footnote;
-    padding-left: 0;
-    margin: 0;
-}
-
-.article .footnotes li {
-    counter-increment: footnote;
-    display: flex;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.article .footnotes li:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.article .footnotes li::before {
-    content: counter(footnote);
-    flex-shrink: 0;
-    font-size: 0.625rem;
-    font-weight: var(--fw-bold);
-    color: var(--bg);
-    background: var(--fg);
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-full);
-    margin-top: 2px;
-}
-
-.article .footnotes li p {
-    flex: 1;
-    margin: 0;
-    font-size: var(--fs-sm);
-    color: var(--muted);
-    line-height: 1.6;
-}
-
-.article .footnotes li a.footnote-back {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-medium);
-    color: var(--subtle);
-    text-decoration: none;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    transition: all 0.2s var(--timing);
-    white-space: nowrap;
-}
-
-.article .footnotes li a.footnote-back i {
-    font-size: 0.5rem;
-}
-
-.article .footnotes li a.footnote-back:hover {
-    color: var(--fg);
-    background: var(--surface-2);
-}
-
-/* Highlight Animation When Scrolled To */
-.article .footnotes li.highlight {
-    background: var(--surface-2);
-    border-radius: var(--radius-sm);
-    padding-left: var(--space-3);
-    padding-right: var(--space-3);
-    margin-left: calc(-1 * var(--space-3));
-    margin-right: calc(-1 * var(--space-3));
-}
-
 .article sup a.footnote-ref.highlight {
     animation: footnote-pulse 0.6s ease;
 }
@@ -1099,6 +993,146 @@ button {
     50% { transform: scale(1.3); }
 }
 
+/* References Container */
+.article .footnotes {
+    margin-top: var(--space-16);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* References Header */
+.article .footnotes-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.article .footnotes-header i {
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+.article .footnotes-header span {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+/* References List */
+.article .footnotes ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Individual Reference Item */
+.article .footnotes li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s var(--timing);
+}
+
+.article .footnotes li:last-child {
+    border-bottom: none;
+}
+
+.article .footnotes li:hover {
+    background: var(--surface-2);
+}
+
+.article .footnotes li.highlight {
+    background: var(--surface-2);
+}
+
+/* Reference Number Badge */
+.article .footnotes li .fn-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 0.6875rem;
+    font-weight: var(--fw-bold);
+    color: var(--bg);
+    background: var(--fg);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+/* Reference Content */
+.article .footnotes li .fn-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.article .footnotes li .fn-content p {
+    margin: 0;
+    font-size: var(--fs-sm);
+    line-height: 1.7;
+    color: var(--fg);
+    opacity: 0.8;
+}
+
+/* Return Button */
+.article .footnotes li .fn-back {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    transition: all 0.2s var(--timing);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.article .footnotes li .fn-back i {
+    font-size: 0.5rem;
+}
+
+.article .footnotes li .fn-back:hover {
+    color: var(--bg);
+    background: var(--fg);
+    border-color: var(--fg);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .article .footnotes li {
+        grid-template-columns: auto 1fr;
+        gap: var(--space-3);
+    }
+    
+    .article .footnotes li .fn-back {
+        grid-column: 2;
+        justify-self: start;
+        margin-top: var(--space-2);
+    }
+    
+    .article .footnotes-header {
+        padding: var(--space-4) var(--space-5);
+    }
+    
+    .article .footnotes li {
+        padding: var(--space-4) var(--space-5);
+    }
+}
 /* =============================================
    RECOMMENDATIONS
    ============================================= */
