@@ -27,6 +27,7 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
     setupTheme();
     setupRouter();
+    setupFootnoteHandler();
     await loadPosts();
     handleRoute();
 });
@@ -50,43 +51,68 @@ function setupTheme() {
 }
 
 /* =============================================
-   ROUTING
+   FOOTNOTE HANDLER — PREVENTS NAVIGATION
    ============================================= */
 
-function setupRouter() {
-    window.addEventListener('hashchange', handleRoute);
-    
-    // Handle anchor links within posts
+function setupFootnoteHandler() {
     document.addEventListener('click', (e) => {
         const link = e.target.closest('a');
         if (!link) return;
         
         const href = link.getAttribute('href');
+        if (!href) return;
         
-        // Handle footnote links (internal anchors)
-        if (href && href.startsWith('#') && !href.startsWith('#/')) {
+        // Handle footnote links (starts with # but not #/)
+        if (href.startsWith('#') && !href.startsWith('#/')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const targetId = href.slice(1);
             const target = document.getElementById(targetId);
             
             if (target) {
-                e.preventDefault();
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                target.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
                 
-                // Update URL without triggering route change
-                const currentHash = window.location.hash;
-                if (currentHash.includes('#/post/')) {
-                    history.replaceState(null, '', currentHash.split('#')[0] + href);
-                }
+                // Highlight effect
+                target.style.transition = 'background 0.3s ease';
+                target.style.background = 'var(--surface-2)';
+                setTimeout(() => {
+                    target.style.background = '';
+                }, 1500);
             }
+            
+            return false;
         }
+    }, true);
+}
+
+/* =============================================
+   ROUTING
+   ============================================= */
+
+function setupRouter() {
+    window.addEventListener('hashchange', (e) => {
+        const newHash = window.location.hash;
+        
+        // Ignore footnote anchors
+        if (newHash.includes('#fn-') || newHash.includes('#fnref-')) {
+            e.preventDefault();
+            return;
+        }
+        
+        handleRoute();
     });
 }
 
 function handleRoute() {
     const hash = window.location.hash.slice(1) || '/';
+    const cleanHash = hash.split('#')[0];
     
-    if (hash.startsWith('/post/')) {
-        const slug = hash.replace('/post/', '').split('#')[0];
+    if (cleanHash.startsWith('/post/')) {
+        const slug = cleanHash.replace('/post/', '');
         renderPost(slug);
     } else {
         renderHome();
@@ -245,17 +271,17 @@ function parseMarkdown(text) {
     let tableLines = [];
     
     const processInline = (str) => {
-        // Footnotes - convert [^1] to superscript links
+        // Footnotes
         str = str.replace(/\[\^(\w+)\]/g, (match, id) => {
             const existingRef = footnotes.find(fn => fn.id === id);
             if (!existingRef) {
                 footnoteCounter++;
             }
             const num = existingRef ? existingRef.num : footnoteCounter;
-            return `<sup><a href="#fn-${id}" id="fnref-${id}" data-footnote-ref>${num}</a></sup>`;
+            return `<sup><a href="#fn-${id}" id="fnref-${id}" class="footnote-ref">${num}</a></sup>`;
         });
         
-        // Inline code (process first to protect content)
+        // Inline code
         str = str.replace(/`([^`]+)`/g, (_, c) => `<code>${esc(c)}</code>`);
         
         // Images
@@ -320,6 +346,40 @@ function parseMarkdown(text) {
         flushTable();
     };
     
+    // Language icons mapping
+    const langIcons = {
+        'javascript': 'fa-brands fa-js',
+        'js': 'fa-brands fa-js',
+        'typescript': 'fa-brands fa-js',
+        'ts': 'fa-brands fa-js',
+        'python': 'fa-brands fa-python',
+        'py': 'fa-brands fa-python',
+        'html': 'fa-brands fa-html5',
+        'css': 'fa-brands fa-css3-alt',
+        'react': 'fa-brands fa-react',
+        'vue': 'fa-brands fa-vuejs',
+        'node': 'fa-brands fa-node-js',
+        'php': 'fa-brands fa-php',
+        'java': 'fa-brands fa-java',
+        'rust': 'fa-brands fa-rust',
+        'go': 'fa-brands fa-golang',
+        'swift': 'fa-brands fa-swift',
+        'bash': 'fa-solid fa-terminal',
+        'shell': 'fa-solid fa-terminal',
+        'terminal': 'fa-solid fa-terminal',
+        'sql': 'fa-solid fa-database',
+        'json': 'fa-solid fa-brackets-curly',
+        'yaml': 'fa-solid fa-file-code',
+        'markdown': 'fa-brands fa-markdown',
+        'md': 'fa-brands fa-markdown',
+        'default': 'fa-solid fa-code'
+    };
+    
+    const getLangIcon = (lang) => {
+        const lower = (lang || '').toLowerCase();
+        return langIcons[lower] || langIcons['default'];
+    };
+    
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         
@@ -328,12 +388,17 @@ function parseMarkdown(text) {
             if (inCode) {
                 const codeContent = esc(codeLines.join('\n'));
                 const langDisplay = codeLang || 'text';
+                const langIcon = getLangIcon(codeLang);
                 
                 html += `
                     <div class="code-block">
                         <div class="code-block__header">
-                            <span class="code-block__lang">${langDisplay}</span>
+                            <span class="code-block__lang">
+                                <i class="${langIcon}"></i>
+                                ${langDisplay}
+                            </span>
                             <button class="code-block__copy" onclick="copyCode(this)" aria-label="Copy code">
+                                <i class="fa-regular fa-copy"></i>
                                 <span class="copy-text">Copy</span>
                             </button>
                         </div>
@@ -356,7 +421,7 @@ function parseMarkdown(text) {
             continue;
         }
         
-        // Footnote definitions [^1]: Text
+        // Footnote definitions
         const fnDefMatch = line.match(/^\[\^(\w+)\]:\s*(.+)$/);
         if (fnDefMatch) {
             flushAll();
@@ -421,7 +486,7 @@ function parseMarkdown(text) {
         }
         if (inBlockquote) flushBQ();
         
-        // Task list items - [ ] or [x]
+        // Task list items
         const taskMatch = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
         if (taskMatch) {
             flushPara();
@@ -433,7 +498,12 @@ function parseMarkdown(text) {
                 listTag = 'ul-task';
             }
             const checked = taskMatch[1].toLowerCase() === 'x';
-            html += `<li><input type="checkbox" ${checked ? 'checked' : ''} disabled><span>${processInline(taskMatch[2])}</span></li>\n`;
+            html += `<li>
+                <span class="task-checkbox ${checked ? 'checked' : ''}">
+                    <i class="fa-solid fa-check"></i>
+                </span>
+                <span class="${checked ? 'checked' : ''}">${processInline(taskMatch[2])}</span>
+            </li>\n`;
             continue;
         }
         
@@ -475,12 +545,18 @@ function parseMarkdown(text) {
     
     flushAll();
     
-    // Add footnotes section if any exist
+    // Footnotes section
     if (footnotes.length > 0) {
-        html += '<div class="footnotes">\n<ol>\n';
+        html += `<div class="footnotes">
+            <p class="footnotes-title"><i class="fa-solid fa-asterisk"></i> Footnotes</p>
+            <ol>\n`;
         footnotes.forEach(fn => {
             html += `<li id="fn-${fn.id}">
-                <p>${processInline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>↩</a></p>
+                <p>${processInline(fn.text)} 
+                    <a href="#fnref-${fn.id}" class="footnote-back">
+                        <i class="fa-solid fa-arrow-turn-up"></i> back
+                    </a>
+                </p>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
@@ -543,10 +619,12 @@ function renderHome() {
     if (state.error) {
         app.innerHTML = `
             <div class="state fade-in">
-                <div class="state__icon">⚠</div>
+                <div class="state__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 <h1 class="state__title">Something went wrong</h1>
                 <p class="state__desc">${state.error}</p>
-                <button class="btn" onclick="location.reload()">Retry</button>
+                <button class="btn" onclick="location.reload()">
+                    <i class="fa-solid fa-rotate-right"></i> Retry
+                </button>
             </div>
         `;
         return;
@@ -555,7 +633,7 @@ function renderHome() {
     if (!state.posts.length) {
         app.innerHTML = `
             <div class="state fade-in">
-                <div class="state__icon">✎</div>
+                <div class="state__icon"><i class="fa-regular fa-file-lines"></i></div>
                 <h1 class="state__title">No posts yet</h1>
                 <p class="state__desc">Add markdown files to your posts/ directory to get started.</p>
             </div>
@@ -566,8 +644,8 @@ function renderHome() {
     const postsHTML = state.posts.map(p => `
         <a href="#/post/${p.slug}" class="post-card">
             <div class="post-card__meta">
-                <span>${formatDate(p.date)}</span>
-                <span>${p.readingTime}</span>
+                <span><i class="fa-regular fa-calendar"></i> ${formatDate(p.date)}</span>
+                <span><i class="fa-regular fa-clock"></i> ${p.readingTime}</span>
             </div>
             <h2 class="post-card__title">${p.title}</h2>
             ${p.description ? `<p class="post-card__desc">${p.description}</p>` : ''}
@@ -601,10 +679,12 @@ function renderPost(slug) {
         document.title = 'Not Found — ' + CONFIG.blogName;
         app.innerHTML = `
             <div class="state fade-in">
-                <div class="state__icon">404</div>
+                <div class="state__icon"><i class="fa-solid fa-ghost"></i></div>
                 <h1 class="state__title">Post not found</h1>
                 <p class="state__desc">The post "${slug}" doesn't exist.</p>
-                <a href="#/" class="btn">Back to Home</a>
+                <a href="#/" class="btn">
+                    <i class="fa-solid fa-house"></i> Back to Home
+                </a>
             </div>
         `;
         return;
@@ -619,18 +699,20 @@ function renderPost(slug) {
     app.innerHTML = `
         <div class="post-layout fade-in">
             <aside class="post-toc">
-                <h2 class="toc__title">Contents</h2>
+                <h2 class="toc__title"><i class="fa-solid fa-list"></i> Contents</h2>
                 <nav class="toc__list">
                     ${toc}
                 </nav>
             </aside>
             
             <article class="post-content">
-                <a href="#/" class="post__back">Back</a>
+                <a href="#/" class="post__back">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </a>
                 <header class="post__header">
                     <div class="post__meta">
-                        <span>${formatDate(post.date)}</span>
-                        <span>${post.readingTime}</span>
+                        <span><i class="fa-regular fa-calendar"></i> ${formatDate(post.date)}</span>
+                        <span><i class="fa-regular fa-clock"></i> ${post.readingTime}</span>
                     </div>
                     <h1 class="post__title">${post.title}</h1>
                 </header>
@@ -638,7 +720,7 @@ function renderPost(slug) {
             </article>
             
             <aside class="post-recommendations">
-                <h2 class="rec__title">More Posts</h2>
+                <h2 class="rec__title"><i class="fa-solid fa-sparkles"></i> More Posts</h2>
                 <div class="rec__list">
                     ${recommendations}
                 </div>
@@ -665,7 +747,6 @@ function generateTOC(html) {
         const level = h.tagName.toLowerCase();
         const text = h.textContent;
         const id = h.id || slugify(text);
-        h.id = id;
         
         return `
             <div class="toc__item">
@@ -726,7 +807,9 @@ function getRecommendations(currentSlug) {
     return recommended.map(p => `
         <a href="#/post/${p.slug}" class="rec__card">
             <h3 class="rec__card-title">${p.title}</h3>
-            <div class="rec__card-meta">${formatDate(p.date)}</div>
+            <div class="rec__card-meta">
+                <i class="fa-regular fa-calendar"></i> ${formatDate(p.date)}
+            </div>
         </a>
     `).join('');
 }
@@ -739,14 +822,16 @@ function copyCode(button) {
     const codeBlock = button.closest('.code-block');
     const code = codeBlock.querySelector('code').textContent;
     const copyText = button.querySelector('.copy-text');
+    const icon = button.querySelector('i');
     
     navigator.clipboard.writeText(code).then(() => {
-        const originalText = copyText.textContent;
         copyText.textContent = 'Copied!';
+        icon.className = 'fa-solid fa-check';
         button.classList.add('copied');
         
         setTimeout(() => {
-            copyText.textContent = originalText;
+            copyText.textContent = 'Copy';
+            icon.className = 'fa-regular fa-copy';
             button.classList.remove('copied');
         }, 2000);
     }).catch(err => {
