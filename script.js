@@ -495,6 +495,7 @@ function parseMarkdown(text) {
         if (inBlockquote) flushBQ();
         
         // Task list items
+        // Task list items
         const taskMatch = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
         if (taskMatch) {
             flushPara();
@@ -506,11 +507,15 @@ function parseMarkdown(text) {
                 listTag = 'ul-task';
             }
             const checked = taskMatch[1].toLowerCase() === 'x';
+            const statusText = checked ? 'Done' : 'To do';
+            const statusClass = checked ? 'done' : 'pending';
+            
             html += `<li>
                 <span class="task-checkbox ${checked ? 'checked' : ''}">
                     <i class="fa-solid fa-check"></i>
                 </span>
-                <span class="${checked ? 'checked' : ''}">${processInline(taskMatch[2])}</span>
+                <span class="task-text ${checked ? 'checked' : ''}">${processInline(taskMatch[2])}</span>
+                <span class="task-status ${statusClass}">${statusText}</span>
             </li>\n`;
             continue;
         }
