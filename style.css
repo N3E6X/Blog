@@ -1,6 +1,6 @@
-/* ========================================
+/* =============================================
    DESIGN SYSTEM — 2026 ULTRA SLEEK
-   ======================================== */
+   ============================================= */
 
 :root {
     --black: #000000;
@@ -87,9 +87,9 @@
     --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.16);
 }
 
-/* ========================================
+/* =============================================
    RESET & BASE
-   ======================================== */
+   ============================================= */
 
 *, *::before, *::after {
     margin: 0;
@@ -142,9 +142,9 @@ button {
     color: var(--bg);
 }
 
-/* ========================================
+/* =============================================
    GRAIN TEXTURE
-   ======================================== */
+   ============================================= */
 
 .grain {
     position: fixed;
@@ -158,9 +158,9 @@ button {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' /%3E%3C/svg%3E");
 }
 
-/* ========================================
+/* =============================================
    NAVIGATION
-   ======================================== */
+   ============================================= */
 
 .nav {
     position: sticky;
@@ -239,9 +239,9 @@ button {
     font-size: 1.125rem;
 }
 
-/* ========================================
+/* =============================================
    MAIN LAYOUT
-   ======================================== */
+   ============================================= */
 
 .main {
     flex: 1;
@@ -257,9 +257,9 @@ button {
     }
 }
 
-/* ========================================
+/* =============================================
    FOOTER
-   ======================================== */
+   ============================================= */
 
 .footer {
     border-top: 1px solid var(--border);
@@ -285,9 +285,9 @@ button {
     opacity: 0.3;
 }
 
-/* ========================================
+/* =============================================
    HOME PAGE
-   ======================================== */
+   ============================================= */
 
 .home {
     max-width: 880px;
@@ -380,9 +380,9 @@ button {
     color: var(--muted);
 }
 
-/* ========================================
+/* =============================================
    POST PAGE — THREE COLUMN LAYOUT
-   ======================================== */
+   ============================================= */
 
 .post-layout {
     display: grid;
@@ -412,7 +412,10 @@ button {
     }
 }
 
-/* TABLE OF CONTENTS */
+/* =============================================
+   TABLE OF CONTENTS
+   ============================================= */
+
 .post-toc {
     position: sticky;
     top: 100px;
@@ -456,7 +459,10 @@ button {
     font-size: var(--fs-xs);
 }
 
-/* MAIN CONTENT */
+/* =============================================
+   MAIN CONTENT
+   ============================================= */
+
 .post-content {
     min-width: 0;
 }
@@ -521,7 +527,10 @@ button {
     }
 }
 
-/* ARTICLE CONTENT */
+/* =============================================
+   ARTICLE CONTENT
+   ============================================= */
+
 .article {
     font-size: var(--fs-md);
     line-height: 1.8;
@@ -587,29 +596,23 @@ button {
     border-radius: 3px;
 }
 
-.article code {
-    font-family: var(--font-mono);
-    font-size: 0.875em;
+/* Inline code */
+.article p code,
+.article li code,
+.article td code,
+.article th code,
+.article h1 code,
+.article h2 code,
+.article h3 code,
+.article h4 code,
+.article h5 code,
+.article h6 code {
     background: var(--surface);
     border: 1px solid var(--border);
     padding: 3px 8px;
     border-radius: var(--radius-sm);
-}
-
-.article pre {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: var(--space-6);
-    overflow-x: auto;
-    line-height: 1.6;
-}
-
-.article pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: var(--fs-sm);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
 }
 
 .article blockquote {
@@ -652,28 +655,308 @@ button {
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     margin: var(--space-10) 0;
+    width: 100%;
 }
+
+/* =============================================
+   TABLES
+   ============================================= */
 
 .article table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: var(--fs-sm);
     margin: var(--space-8) 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
-.article th,
-.article td {
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border);
-    text-align: left;
+.article thead {
+    background: var(--surface);
 }
 
 .article th {
-    background: var(--surface);
+    padding: var(--space-4) var(--space-5);
+    text-align: left;
     font-weight: var(--fw-semibold);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border-strong);
+    color: var(--fg);
 }
 
-/* RECOMMENDATIONS */
+.article td {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+}
+
+.article tr:last-child td {
+    border-bottom: none;
+}
+
+.article tbody tr {
+    transition: background 0.2s var(--timing);
+}
+
+.article tbody tr:hover {
+    background: var(--surface);
+}
+
+@media (max-width: 768px) {
+    .article table {
+        font-size: var(--fs-xs);
+    }
+    
+    .article th,
+    .article td {
+        padding: var(--space-3) var(--space-3);
+    }
+}
+
+/* =============================================
+   CODE BLOCKS WITH COPY BUTTON
+   ============================================= */
+
+.code-block {
+    position: relative;
+    margin: var(--space-8) 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.code-block__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-5);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.code-block__lang {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.code-block__copy {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.2s var(--timing);
+    cursor: pointer;
+}
+
+.code-block__copy:hover {
+    background: var(--bg);
+    color: var(--fg);
+    border-color: var(--border-strong);
+}
+
+.code-block__copy.copied {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+}
+
+.code-block pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: var(--space-5);
+    overflow-x: auto;
+    line-height: 1.6;
+}
+
+.code-block pre code {
+    display: block;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    background: none;
+    border: none;
+}
+
+@keyframes copyPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.code-block__copy.copied {
+    animation: copyPulse 0.3s var(--timing);
+}
+
+/* =============================================
+   TASK LISTS
+   ============================================= */
+
+.article ul.task-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.article ul.task-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.article ul.task-list li input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    margin-top: 4px;
+    transition: all 0.2s var(--timing);
+}
+
+.article ul.task-list li input[type="checkbox"]:hover {
+    border-color: var(--fg);
+    background: var(--surface-2);
+}
+
+.article ul.task-list li input[type="checkbox"]:checked {
+    background: var(--fg);
+    border-color: var(--fg);
+}
+
+.article ul.task-list li input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: var(--fw-bold);
+    line-height: 1;
+}
+
+.article ul.task-list li input[type="checkbox"]:checked + span {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.article ul.task-list li span {
+    flex: 1;
+    transition: all 0.2s var(--timing);
+}
+
+/* =============================================
+   FOOTNOTES
+   ============================================= */
+
+.article sup a[data-footnote-ref] {
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: var(--fw-semibold);
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin: 0 2px;
+    transition: all 0.2s var(--timing);
+}
+
+.article sup a[data-footnote-ref]:hover {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+}
+
+.article .footnotes {
+    margin-top: var(--space-16);
+    padding-top: var(--space-8);
+    border-top: 2px solid var(--border);
+}
+
+.article .footnotes::before {
+    content: 'Footnotes';
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+    margin-bottom: var(--space-6);
+}
+
+.article .footnotes ol {
+    list-style: none;
+    counter-reset: footnote;
+    padding-left: 0;
+}
+
+.article .footnotes li {
+    counter-increment: footnote;
+    position: relative;
+    padding-left: var(--space-10);
+    margin-bottom: var(--space-5);
+}
+
+.article .footnotes li::before {
+    content: counter(footnote);
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: var(--muted);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.article .footnotes li p {
+    margin-bottom: var(--space-3);
+    font-size: var(--fs-sm);
+    color: var(--muted);
+}
+
+.article .footnotes li a[data-footnote-backref] {
+    font-size: var(--fs-xs);
+    opacity: 0.5;
+    margin-left: var(--space-2);
+    text-decoration: none;
+}
+
+.article .footnotes li a[data-footnote-backref]:hover {
+    opacity: 1;
+}
+
+/* =============================================
+   RECOMMENDATIONS
+   ============================================= */
+
 .post-recommendations {
     position: sticky;
     top: 100px;
@@ -720,9 +1003,9 @@ button {
     color: var(--subtle);
 }
 
-/* ========================================
+/* =============================================
    LOADING SKELETONS
-   ======================================== */
+   ============================================= */
 
 .skeleton {
     background: var(--surface);
@@ -780,9 +1063,9 @@ button {
     width: 90%;
 }
 
-/* ========================================
+/* =============================================
    ERROR & EMPTY STATES
-   ======================================== */
+   ============================================= */
 
 .state {
     max-width: 640px;
@@ -830,9 +1113,9 @@ button {
     box-shadow: var(--shadow-md);
 }
 
-/* ========================================
+/* =============================================
    ANIMATIONS
-   ======================================== */
+   ============================================= */
 
 .fade-in {
     animation: fadeIn 0.4s var(--timing);
@@ -849,9 +1132,9 @@ button {
     }
 }
 
-/* ========================================
+/* =============================================
    ACCESSIBILITY
-   ======================================== */
+   ============================================= */
 
 :focus {
     outline: 2px solid var(--fg);
