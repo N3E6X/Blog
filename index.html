@@ -1,52 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>N3E6X</title>
-  <meta name="description" content="N3E6X — A minimal blog.">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N3E6X</title>
+    <meta name="description" content="N3E6X — A minimal blog exploring ideas, code, and design.">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark light">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://api.github.com">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Skip Link -->
+    <a href="#main" class="skip-link">Skip to content</a>
 
-  <a href="#main" class="skip-link">SKIP TO CONTENT</a>
-
-  <!-- Reading Progress -->
-  <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-
-  <header class="header" role="banner">
-    <nav class="nav" aria-label="Main navigation">
-      <a href="#/" class="nav__logo">N3E6X</a>
-      <div class="nav__actions">
-        <button class="nav__toggle" id="theme-toggle" type="button" aria-label="Toggle light mode">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
-            <circle cx="12" cy="12" r="4"/>
-            <line x1="12" y1="2" x2="12" y2="4"/>
-            <line x1="12" y1="20" x2="12" y2="22"/>
-            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/>
-            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
-            <line x1="2" y1="12" x2="4" y2="12"/>
-            <line x1="20" y1="12" x2="22" y2="12"/>
-            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/>
-            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
-          </svg>
-        </button>
-      </div>
-    </nav>
-  </header>
-
-  <main id="main" class="main" role="main">
-    <div id="app" class="app-container" aria-live="polite"></div>
-  </main>
-
-  <footer class="footer" role="contentinfo">
-    <div class="footer__inner">
-      <span>&copy; 2025 N3E6X</span>
-      <span class="footer__separator">—</span>
-      <span>MINIMAL BLOG SYSTEM</span>
+    <!-- Ambient Background -->
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="ambient-orb ambient-orb--1"></div>
+        <div class="ambient-orb ambient-orb--2"></div>
+        <div class="ambient-orb ambient-orb--3"></div>
     </div>
-  </footer>
 
-  <script src="script.js"></script>
+    <!-- Grain Overlay -->
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <nav class="nav" aria-label="Main navigation">
+            <a href="#/" class="logo" aria-label="N3E6X Home">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="32" height="32" rx="8" fill="currentColor" fill-opacity="0.1"/>
+                        <path d="M8 24V8L16 16L24 8V24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="logo-text">N3E6X</span>
+            </a>
+
+            <div class="nav-end">
+                <button
+                    class="theme-toggle"
+                    id="theme-toggle"
+                    type="button"
+                    aria-label="Toggle color theme"
+                    aria-pressed="false"
+                >
+                    <span class="theme-toggle-track">
+                        <span class="theme-toggle-thumb">
+                            <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="4"/>
+                                <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                            </svg>
+                            <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </span>
+                    </span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main -->
+    <main id="main" class="main" role="main">
+        <div id="app" class="app" aria-live="polite"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-logo">N3E6X</span>
+                <span class="footer-year"> 2025</span>
+            </div>
+            <div class="footer-links">
+                <span class="footer-tagline">Crafted with precision</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Progress Bar -->
+    <div class="reading-progress" id="reading-progress" aria-hidden="true">
+        <div class="reading-progress-bar"></div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
