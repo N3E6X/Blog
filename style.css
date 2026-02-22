@@ -503,10 +503,6 @@ button {
     transition: all 0.2s var(--timing);
 }
 
-.post__back::before {
-    content: "←";
-    font-size: 1rem;
-}
 
 .post__back:hover {
     background: var(--surface);
