@@ -1,850 +1,629 @@
-/* =============================================================
-   N3E6X BLOG ENGINE  ·  v2.0
-   =============================================================
-   SETUP
-   ─────
-   1. Edit CONFIG below (username + repo).
-   2. Drop .md files in /posts with frontmatter:
+/* ========================================
+   N3E6X BLOG ENGINE — 2026 EDITION
+   ======================================== */
 
-      ---
-      title: Your Title
-      date: 2025-06-01
-      description: Short summary.
-      tags: code, design
-      ---
-
-      Content here…
-
-   3. Push → GitHub Pages → done.
-   ============================================================= */
-
-'use strict';
-
-/* ─── CONFIG ─────────────────────────────────────────────────── */
-
-const CONFIG = Object.freeze({
-  github: {
-    username: 'N3E6X',   // ← your GitHub username
-    repo:     'Blog',    // ← your repository name
-    branch:   'main'
-  },
-  postsDir:        'posts',
-  blogName:        'N3E6X',
-  blogDescription: 'Thoughts, code, and everything between.'
-});
-
-/* ─── STATE ───────────────────────────────────────────────────── */
-
-const state = {
-  posts:   [],
-  loading: true,
-  error:   null
+const CONFIG = {
+    github: {
+        username: 'N3E6X',
+        repo: 'Blog',
+        branch: 'main'
+    },
+    postsDir: 'posts',
+    blogName: 'N3E6X',
+    blogDescription: 'Thoughts, code, and everything between.'
 };
 
-/* ─── INIT ────────────────────────────────────────────────────── */
+const state = {
+    posts: [],
+    loading: true,
+    error: null,
+    currentPost: null
+};
+
+/* ========================================
+   INITIALIZATION
+   ======================================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  initTheme();
-  initReadingProgress();
-
-  // Render skeleton immediately, then load real data
-  renderRoute();
-  window.addEventListener('hashchange', renderRoute);
-
-  await loadPosts();
-  renderRoute();
+    setupTheme();
+    setupRouter();
+    await loadPosts();
+    handleRoute();
 });
 
-/* ─── THEME ───────────────────────────────────────────────────── */
+/* ========================================
+   THEME
+   ======================================== */
 
-function initTheme() {
-  const stored = localStorage.getItem('n3e6x-theme');
-  if (stored === 'light') document.body.classList.add('light');
-
-  const btn = document.getElementById('theme-toggle');
-  if (!btn) return;
-
-  btn.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    const mode = document.body.classList.contains('light') ? 'light' : 'dark';
-    localStorage.setItem('n3e6x-theme', mode);
-  });
+function setupTheme() {
+    const btn = document.getElementById('theme-toggle');
+    const saved = localStorage.getItem('n3e6x-theme');
+    
+    if (saved === 'light') {
+        document.body.classList.add('light-mode');
+    }
+    
+    btn?.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('light-mode');
+        localStorage.setItem('n3e6x-theme', isLight ? 'light' : 'dark');
+    });
 }
 
-/* ─── READING PROGRESS ────────────────────────────────────────── */
+/* ========================================
+   ROUTING
+   ======================================== */
 
-function initReadingProgress() {
-  const bar = document.getElementById('reading-progress');
-  if (!bar) return;
-
-  window.addEventListener('scroll', () => {
-    const docH   = document.documentElement.scrollHeight - window.innerHeight;
-    const pct    = docH > 0 ? (window.scrollY / docH) * 100 : 0;
-    bar.style.width = pct.toFixed(1) + '%';
-  }, { passive: true });
+function setupRouter() {
+    window.addEventListener('hashchange', handleRoute);
 }
 
-/* ─── ROUTING ─────────────────────────────────────────────────── */
-
-function renderRoute() {
-  const hash = window.location.hash.replace(/^#/, '') || '/';
-
-  if (hash.startsWith('/post/')) {
-    const slug = hash.slice('/post/'.length);
-    renderPost(slug);
-  } else {
-    renderHome();
-  }
+function handleRoute() {
+    const hash = window.location.hash.slice(1) || '/';
+    
+    if (hash.startsWith('/post/')) {
+        const slug = hash.replace('/post/', '');
+        renderPost(slug);
+    } else {
+        renderHome();
+    }
 }
 
-/* ─── DATA LOADING ────────────────────────────────────────────── */
+function navigate(path) {
+    window.location.hash = path;
+}
+
+/* ========================================
+   DATA LOADING
+   ======================================== */
 
 async function loadPosts() {
-  state.loading = true;
-  state.error   = null;
-
-  try {
-    await loadViaGitHubAPI();
-  } catch (apiErr) {
-    console.warn('[N3E6X] GitHub API failed:', apiErr.message);
+    state.loading = true;
+    state.error = null;
+    
     try {
-      await loadViaManifest();
-    } catch (manErr) {
-      console.warn('[N3E6X] Manifest fallback failed:', manErr.message);
-      state.error = 'Could not load posts. Check CONFIG or add a posts/posts.json file.';
+        await loadViaGitHubAPI();
+    } catch (err) {
+        console.warn('GitHub API failed:', err);
+        try {
+            await loadViaManifest();
+        } catch (err2) {
+            console.warn('Manifest failed:', err2);
+            state.error = 'Unable to load posts. Check your configuration.';
+        }
     }
-  }
-
-  state.loading = false;
+    
+    state.loading = false;
 }
 
 async function loadViaGitHubAPI() {
-  const { username, repo, branch } = CONFIG.github;
-  const url = `https://api.github.com/repos/${encodeURIComponent(username)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(CONFIG.postsDir)}?ref=${encodeURIComponent(branch)}`;
-
-  const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
-  if (!res.ok) {
-    const info = await res.json().catch(() => ({}));
-    throw new Error(info.message || `HTTP ${res.status}`);
-  }
-
-  const files = await res.json();
-  if (!Array.isArray(files)) throw new Error('Unexpected API response shape');
-
-  const mdFiles = files.filter(f =>
-    f.type === 'file' &&
-    typeof f.name === 'string' &&
-    f.name.toLowerCase().endsWith('.md')
-  );
-
-  const posts = await Promise.all(
-    mdFiles.map(f => fetchAndParse(f.name, f.download_url))
-  );
-
-  state.posts = posts
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    const { username, repo, branch } = CONFIG.github;
+    const url = `https://api.github.com/repos/${username}/${repo}/contents/${CONFIG.postsDir}?ref=${branch}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    
+    const files = await res.json();
+    const mdFiles = files.filter(f => f.name.endsWith('.md') && f.type === 'file');
+    
+    const posts = await Promise.all(
+        mdFiles.map(file => fetchPost(file.name, file.download_url))
+    );
+    
+    state.posts = posts
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 async function loadViaManifest() {
-  const res = await fetch('./posts/posts.json', { cache: 'no-cache' });
-  if (!res.ok) throw new Error('No posts.json');
-
-  const filenames = await res.json();
-  if (!Array.isArray(filenames)) throw new Error('posts.json must be an array');
-
-  const posts = await Promise.all(
-    filenames.map(name => fetchAndParse(name, null))
-  );
-
-  state.posts = posts
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    const res = await fetch('./posts.json');
+    if (!res.ok) throw new Error('No posts.json');
+    
+    const filenames = await res.json();
+    const posts = await Promise.all(
+        filenames.map(name => fetchPost(name, null))
+    );
+    
+    state.posts = posts
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-async function fetchAndParse(filename, downloadUrl) {
-  if (typeof filename !== 'string' || !filename.endsWith('.md')) return null;
-
-  try {
-    let res = await fetch(`./${CONFIG.postsDir}/${filename}`, { cache: 'no-cache' });
-    if (!res.ok && downloadUrl) res = await fetch(downloadUrl);
-    if (!res.ok) return null;
-
-    const raw = await res.text();
-    return parsePost(filename, raw);
-  } catch (e) {
-    console.warn(`[N3E6X] Failed to load ${filename}:`, e);
-    return null;
-  }
+async function fetchPost(filename, downloadUrl) {
+    try {
+        let res = await fetch(`./${CONFIG.postsDir}/${filename}`, { cache: 'no-cache' });
+        
+        if (!res.ok && downloadUrl) {
+            res = await fetch(downloadUrl);
+        }
+        
+        if (!res.ok) return null;
+        
+        const raw = await res.text();
+        return parsePost(filename, raw);
+    } catch (err) {
+        console.warn(`Failed to load ${filename}:`, err);
+        return null;
+    }
 }
 
-/* ─── FRONTMATTER ─────────────────────────────────────────────── */
+/* ========================================
+   MARKDOWN PARSING
+   ======================================== */
 
 function parsePost(filename, raw) {
-  const cleaned = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const { meta, content } = parseFrontmatter(cleaned);
-  const slug = filename.replace(/\.md$/i, '');
-
-  return {
-    slug,
-    title:       sanitizeText(meta.title || slugToTitle(slug)),
-    date:        sanitizeText(meta.date  || ''),
-    description: sanitizeText(meta.description || ''),
-    tags:        sanitizeText(meta.tags || ''),
-    content,
-    html:        parseMarkdown(content),
-    headings:    extractHeadings(content),
-    readingTime: calcReadingTime(content)
-  };
+    raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    const { meta, content } = parseFrontmatter(raw);
+    const slug = filename.replace(/\.md$/i, '');
+    
+    return {
+        slug,
+        filename,
+        title: meta.title || toTitleCase(slug),
+        date: meta.date || '1970-01-01',
+        description: meta.description || '',
+        content,
+        html: parseMarkdown(content),
+        readingTime: estimateReadingTime(content)
+    };
 }
 
 function parseFrontmatter(raw) {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match) return { meta: {}, content: raw.trim() };
-
-  const meta = {};
-  for (const line of match[1].split('\n')) {
-    const colon = line.indexOf(':');
-    if (colon === -1) continue;
-    const key = line.slice(0, colon).trim().toLowerCase();
-    let   val = line.slice(colon + 1).trim();
-    if (/^["'].*["']$/.test(val)) val = val.slice(1, -1);
-    if (key) meta[key] = val;
-  }
-
-  return { meta, content: match[2].trim() };
+    const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    if (!match) return { meta: {}, content: raw };
+    
+    const meta = {};
+    match[1].split('\n').forEach(line => {
+        const idx = line.indexOf(':');
+        if (idx === -1) return;
+        const key = line.slice(0, idx).trim().toLowerCase();
+        let val = line.slice(idx + 1).trim();
+        if (/^["'].*["']$/.test(val)) val = val.slice(1, -1);
+        meta[key] = val;
+    });
+    
+    return { meta, content: match[2].trim() };
 }
 
-/* ─── MARKDOWN PARSER ─────────────────────────────────────────── */
-
-function parseMarkdown(src) {
-  if (!src) return '';
-
-  const lines  = src.split('\n');
-  let   out    = '';
-
-  let inFence    = false, fenceLang = '', fenceLines = [];
-  let inUL       = false;
-  let inOL       = false;
-  let inTask     = false;
-  let inBQ       = false, bqLines = [];
-  let paraLines  = [];
-  let inTable    = false, tableRows = [], tableHead = false;
-
-  /* ── inline ──────────────────────────────────────────────── */
-  function inline(s) {
-    // Escape HTML entities first
-    s = s.replace(/&/g, '&amp;')
-         .replace(/</g, '&lt;')
-         .replace(/>/g, '&gt;');
-
-    // Inline code (protect first)
-    s = s.replace(/`([^`\n]+)`/g, (_, c) => `<code>${c}</code>`);
-
-    // Images
-    s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-      (_, alt, src) => `<img src="${sanitizeURL(src)}" alt="${escAttr(alt)}" loading="lazy">`);
-
-    // Links
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-      (_, text, href) => `<a href="${sanitizeURL(href)}" target="_blank" rel="noopener noreferrer">${text}</a>`);
-
-    // Footnote refs
-    s = s.replace(/\[\^([^\]]+)\]/g, (_, id) =>
-      `<sup class="fn-ref"><a href="#fn-${escAttr(id)}" id="fnref-${escAttr(id)}">${escAttr(id)}</a></sup>`);
-
-    // Highlight ==text==
-    s = s.replace(/==(.+?)==/g, '<mark>$1</mark>');
-
-    // Bold + Italic
-    s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-    s = s.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
-
-    // Bold
-    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-    // Italic
-    s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
-    s = s.replace(/_([^_\n]+)_/g, '<em>$1</em>');
-
-    // Strikethrough
-    s = s.replace(/~~(.+?)~~/g, '<del>$1</del>');
-
-    // Superscript ^text^
-    s = s.replace(/\^([^^\n]+)\^/g, '<sup>$1</sup>');
-
-    // Subscript ~text~
-    s = s.replace(/~([^~\n]+)~/g, '<sub>$1</sub>');
-
-    // Abbreviation (abbr)
-    s = s.replace(/\[([A-Z][A-Z0-9]+)\]\(abbr: ([^)]+)\)/g,
-      (_, abbr, title) => `<abbr title="${escAttr(title)}">${abbr}</abbr>`);
-
-    return s;
-  }
-
-  function flushPara() {
-    if (paraLines.length) {
-      out += `<p>${inline(paraLines.join(' '))}</p>\n`;
-      paraLines = [];
+function parseMarkdown(text) {
+    if (!text) return '';
+    
+    const lines = text.split('\n');
+    let html = '';
+    
+    let inCode = false;
+    let codeLang = '';
+    let codeLines = [];
+    let inList = false;
+    let listTag = '';
+    let inBlockquote = false;
+    let bqLines = [];
+    let paraLines = [];
+    
+    function inline(str) {
+        str = str.replace(/`([^`]+)`/g, (_, c) => `<code>${esc(c)}</code>`);
+        str = str.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+        str = str.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        str = str.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        str = str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        str = str.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+        str = str.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        str = str.replace(/==(.+?)==/g, '<mark>$1</mark>');
+        return str;
     }
-  }
-
-  function closeUL()  { if (inUL)   { out += '</ul>\n';  inUL   = false; } }
-  function closeOL()  { if (inOL)   { out += '</ol>\n';  inOL   = false; } }
-  function closeTask(){ if (inTask) { out += '</ul>\n';  inTask = false; } }
-
-  function closeLists() { closeUL(); closeOL(); closeTask(); }
-
-  function flushBQ() {
-    if (inBQ) {
-      out += '<blockquote>\n' + parseMarkdown(bqLines.join('\n')) + '</blockquote>\n';
-      inBQ    = false;
-      bqLines = [];
+    
+    function flushPara() {
+        if (paraLines.length) {
+            html += `<p>${inline(paraLines.join(' '))}</p>\n`;
+            paraLines = [];
+        }
     }
-  }
-
-  function flushTable() {
-    if (!tableRows.length) { inTable = false; return; }
-
-    out += '<div class="table-wrap"><table>\n';
-    let rowIdx = 0;
-
-    for (const row of tableRows) {
-      if (row === '__SEP__') { rowIdx++; continue; }
-      const cells = row.split('|').map(c => c.trim()).filter((_, i, a) =>
-        i > 0 || a[0] !== '' ? true : false
-      );
-
-      if (rowIdx === 0) {
-        out += '<thead><tr>' +
-          cells.map(c => `<th>${inline(c)}</th>`).join('') +
-          '</tr></thead>\n<tbody>\n';
-      } else {
-        out += '<tr>' +
-          cells.map(c => `<td>${inline(c)}</td>`).join('') +
-          '</tr>\n';
-      }
+    
+    function flushList() {
+        if (inList) {
+            html += `</${listTag}>\n`;
+            inList = false;
+            listTag = '';
+        }
     }
-
-    out += '</tbody></table></div>\n';
-    tableRows = [];
-    inTable   = false;
-  }
-
-  function flushAll() {
-    flushPara();
-    closeLists();
-    flushBQ();
-    flushTable();
-  }
-
-  /* ── line loop ───────────────────────────────────────────── */
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trim = line.trim();
-
-    /* Fenced code blocks */
-    if (/^```/.test(trim)) {
-      if (inFence) {
-        const lang = fenceLang ? ` class="language-${escAttr(fenceLang)}"` : '';
-        const code = escCode(fenceLines.join('\n'));
-        const head = fenceLang
-          ? `<div class="code-header"><span class="code-lang">${escAttr(fenceLang)}</span><button class="code-copy" aria-label="Copy code">Copy</button></div>`
-          : `<div class="code-header"><span class="code-lang"></span><button class="code-copy" aria-label="Copy code">Copy</button></div>`;
-        out      += `<pre>${head}<code${lang}>${code}</code></pre>\n`;
-        inFence   = false;
-        fenceLines = [];
-        fenceLang  = '';
-      } else {
-        flushAll();
-        inFence   = true;
-        fenceLang = trim.slice(3).trim();
-      }
-      continue;
+    
+    function flushBQ() {
+        if (inBlockquote) {
+            html += `<p>${inline(bqLines.join(' '))}</p>\n</blockquote>\n`;
+            inBlockquote = false;
+            bqLines = [];
+        }
     }
-    if (inFence) { fenceLines.push(line); continue; }
-
-    /* Blank line */
-    if (trim === '') {
-      flushAll();
-      continue;
+    
+    function flushAll() {
+        flushPara();
+        flushList();
+        flushBQ();
     }
-
-    /* Heading */
-    const hm = trim.match(/^(#{1,6})\s+(.+)$/);
-    if (hm) {
-      flushAll();
-      const lvl = hm[1].length;
-      const txt = hm[2];
-      const id  = headingId(txt);
-      out += `<h${lvl} id="${id}">${inline(txt)}</h${lvl}>\n`;
-      continue;
+    
+    for (let line of lines) {
+        // Code blocks
+        if (line.trim().startsWith('```')) {
+            if (inCode) {
+                html += `<pre><code${codeLang ? ` class="language-${codeLang}"` : ''}>${esc(codeLines.join('\n'))}</code></pre>\n`;
+                inCode = false;
+                codeLines = [];
+                codeLang = '';
+            } else {
+                flushAll();
+                inCode = true;
+                codeLang = line.trim().slice(3).trim();
+            }
+            continue;
+        }
+        
+        if (inCode) {
+            codeLines.push(line);
+            continue;
+        }
+        
+        // Blank line
+        if (line.trim() === '') {
+            flushAll();
+            continue;
+        }
+        
+        // Headings
+        const hm = line.match(/^(#{1,6})\s+(.+)$/);
+        if (hm) {
+            flushAll();
+            const lvl = hm[1].length;
+            const text = hm[2];
+            const id = slugify(text);
+            html += `<h${lvl} id="${id}">${inline(text)}</h${lvl}>\n`;
+            continue;
+        }
+        
+        // Horizontal rule
+        if (/^(\s*[-*_]\s*){3,}$/.test(line)) {
+            flushAll();
+            html += '<hr>\n';
+            continue;
+        }
+        
+        // Blockquote
+        const bqm = line.match(/^>\s?(.*)$/);
+        if (bqm) {
+            flushPara();
+            flushList();
+            if (!inBlockquote) {
+                html += '<blockquote>\n';
+                inBlockquote = true;
+            }
+            bqLines.push(bqm[1]);
+            continue;
+        }
+        if (inBlockquote) flushBQ();
+        
+        // Unordered list
+        const ulm = line.match(/^\s*[-*+]\s+(.+)$/);
+        if (ulm) {
+            flushPara();
+            flushBQ();
+            if (!inList || listTag !== 'ul') {
+                flushList();
+                html += '<ul>\n';
+                inList = true;
+                listTag = 'ul';
+            }
+            html += `<li>${inline(ulm[1])}</li>\n`;
+            continue;
+        }
+        
+        // Ordered list
+        const olm = line.match(/^\s*\d+\.\s+(.+)$/);
+        if (olm) {
+            flushPara();
+            flushBQ();
+            if (!inList || listTag !== 'ol') {
+                flushList();
+                html += '<ol>\n';
+                inList = true;
+                listTag = 'ol';
+            }
+            html += `<li>${inline(olm[1])}</li>\n`;
+            continue;
+        }
+        
+        // Paragraph
+        flushList();
+        flushBQ();
+        paraLines.push(line.trim());
     }
-
-    /* Horizontal rule */
-    if (/^(\s*[-*_]\s*){3,}$/.test(trim)) {
-      flushAll();
-      out += '<hr>\n';
-      continue;
-    }
-
-    /* Blockquote */
-    if (/^>/.test(trim)) {
-      flushPara();
-      closeLists();
-      if (!inBQ) inBQ = true;
-      bqLines.push(trim.replace(/^>\s?/, ''));
-      continue;
-    }
-    if (inBQ) flushBQ();
-
-    /* Table */
-    if (/^\|/.test(trim)) {
-      flushPara();
-      closeLists();
-      inTable = true;
-      if (/^[\|\s\-:]+$/.test(trim)) {
-        tableRows.push('__SEP__');
-      } else {
-        tableRows.push(trim.replace(/^\||\|$/g, ''));
-      }
-      continue;
-    }
-    if (inTable) flushTable();
-
-    /* Task list */
-    const tkm = trim.match(/^[-*+]\s+\[([ xX])\]\s+(.+)$/);
-    if (tkm) {
-      flushPara();
-      closeUL();
-      closeOL();
-      if (!inTask) { out += '<ul class="task-list">\n'; inTask = true; }
-      const checked = tkm[1].trim() !== '';
-      const icon    = checked
-        ? `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="task-check__icon"><polyline points="2,6 5,9 10,3"/></svg>`
-        : '';
-      out += `<li><span class="task-check${checked ? ' task-check--checked' : ''}" aria-hidden="true">${icon}</span>${inline(tkm[2])}</li>\n`;
-      continue;
-    }
-
-    /* Unordered list */
-    const ulm = trim.match(/^[-*+]\s+(.+)$/);
-    if (ulm) {
-      flushPara();
-      closeOL();
-      closeTask();
-      if (!inUL) { out += '<ul>\n'; inUL = true; }
-      out += `<li>${inline(ulm[1])}</li>\n`;
-      continue;
-    }
-
-    /* Ordered list */
-    const olm = trim.match(/^\d+\.\s+(.+)$/);
-    if (olm) {
-      flushPara();
-      closeUL();
-      closeTask();
-      if (!inOL) { out += '<ol>\n'; inOL = true; }
-      out += `<li>${inline(olm[1])}</li>\n`;
-      continue;
-    }
-
-    /* Definition list */
-    if (trim.startsWith(': ') && paraLines.length) {
-      const term = paraLines.pop();
-      if (!out.endsWith('</dl>\n')) out += '<dl>\n';
-      out = out.replace(/<\/dl>\n$/, '');
-      out += `<dt>${inline(term)}</dt>\n<dd>${inline(trim.slice(2))}</dd>\n</dl>\n`;
-      continue;
-    }
-
-    /* Footnote definition */
-    const fnm = trim.match(/^\[\^([^\]]+)\]:\s+(.+)$/);
-    if (fnm) {
-      flushAll();
-      out += `<div class="footnotes"><p id="fn-${escAttr(fnm[1])}"><sup>${escAttr(fnm[1])}</sup> ${inline(fnm[2])} <a href="#fnref-${escAttr(fnm[1])}" aria-label="Back to reference">↩</a></p></div>\n`;
-      continue;
-    }
-
-    /* Paragraph */
-    closeLists();
-    paraLines.push(trim);
-  }
-
-  flushAll();
-  return out;
+    
+    flushAll();
+    return html;
 }
 
-/* ─── HEADING IDS ─────────────────────────────────────────────── */
-
-function headingId(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80);
+function esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
-function extractHeadings(content) {
-  const headings = [];
-  const re = /^(#{1,4})\s+(.+)$/gm;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    headings.push({ level: m[1].length, text: m[2].trim(), id: headingId(m[2].trim()) });
-  }
-  return headings;
+function slugify(text) {
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
 }
 
-/* ─── SANITIZATION ────────────────────────────────────────────── */
-
-function escAttr(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escCode(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function sanitizeText(s) {
-  return String(s)
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .slice(0, 500);
-}
-
-function sanitizeURL(url) {
-  try {
-    const u = new URL(url, location.href);
-    if (!['http:', 'https:', 'mailto:'].includes(u.protocol)) return '#';
-    return u.href;
-  } catch {
-    // Relative URL
-    return url.replace(/[^a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]/g, '');
-  }
-}
-
-/* ─── RENDERING — HOME ────────────────────────────────────────── */
+/* ========================================
+   RENDERING
+   ======================================== */
 
 function renderHome() {
-  const app = document.getElementById('app');
-  document.title = CONFIG.blogName;
-
-  if (state.loading) {
-    app.innerHTML = skeletonHome();
-    return;
-  }
-
-  if (state.error) {
+    const app = document.getElementById('app');
+    document.title = CONFIG.blogName;
+    
+    if (state.loading) {
+        app.innerHTML = skeletonHome();
+        return;
+    }
+    
+    if (state.error) {
+        app.innerHTML = `
+            <div class="state fade-in">
+                <div class="state__icon">⚠</div>
+                <h1 class="state__title">Something went wrong</h1>
+                <p class="state__desc">${state.error}</p>
+                <button class="btn" onclick="location.reload()">Retry</button>
+            </div>
+        `;
+        return;
+    }
+    
+    if (!state.posts.length) {
+        app.innerHTML = `
+            <div class="state fade-in">
+                <div class="state__icon">���</div>
+                <h1 class="state__title">No posts yet</h1>
+                <p class="state__desc">Add markdown files to your posts/ directory to get started.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const postsHTML = state.posts.map(p => `
+        <a href="#/post/${p.slug}" class="post-card">
+            <div class="post-card__meta">
+                <span>${formatDate(p.date)}</span>
+                <span>${p.readingTime}</span>
+            </div>
+            <h2 class="post-card__title">${p.title}</h2>
+            ${p.description ? `<p class="post-card__desc">${p.description}</p>` : ''}
+        </a>
+    `).join('');
+    
     app.innerHTML = `
-      <div class="state-wrap fade-in" role="alert">
-        <p class="state-error__label">Error</p>
-        <h1 class="state-error__title">Something went wrong</h1>
-        <p class="state-error__msg">${state.error}</p>
-        <button class="btn" onclick="location.reload()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Retry
-        </button>
-      </div>`;
-    return;
-  }
-
-  if (!state.posts.length) {
-    app.innerHTML = `
-      <div class="state-wrap fade-in">
-        <p class="state-empty__text">No posts yet — drop <code>.md</code> files in the <code>posts/</code> folder.</p>
-      </div>`;
-    return;
-  }
-
-  const cards = state.posts.map(p => `
-    <a href="#/post/${p.slug}" class="post-card" aria-label="${p.title}">
-      <div class="post-card__body">
-        <p class="post-card__tag">${p.tags || 'Article'}</p>
-        <h2 class="post-card__title">${p.title}</h2>
-        ${p.description ? `<p class="post-card__desc">${p.description}</p>` : ''}
-      </div>
-      <div class="post-card__aside">
-        <span class="post-card__date">${formatDate(p.date)}</span>
-        <span class="post-card__rt">${p.readingTime}</span>
-        <svg class="post-card__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-          <line x1="5" y1="12" x2="19" y2="12"/>
-          <polyline points="12 5 19 12 12 19"/>
-        </svg>
-      </div>
-    </a>`).join('');
-
-  app.innerHTML = `
-    <section class="home fade-in" aria-label="Posts">
-      <header>
-        <p class="home__eyebrow"><span class="home__eyebrow-line"></span>Writing</p>
-        <h1 class="home__title">${CONFIG.blogName}</h1>
-        <p class="home__desc">${CONFIG.blogDescription}</p>
-      </header>
-      <div class="home__divider" aria-hidden="true">
-        <span class="home__divider-label">Posts</span>
-        <span class="home__divider-rule"></span>
-        <span class="home__divider-label">${state.posts.length}</span>
-      </div>
-      <div class="post-list" role="feed">${cards}</div>
-    </section>`;
+        <div class="home fade-in">
+            <header class="home__header">
+                <h1 class="home__title">${CONFIG.blogName}</h1>
+                <p class="home__desc">${CONFIG.blogDescription}</p>
+            </header>
+            <div class="posts-grid">
+                ${postsHTML}
+            </div>
+        </div>
+    `;
 }
-
-/* ─── RENDERING — POST ────────────────────────────────────────── */
 
 function renderPost(slug) {
-  const app = document.getElementById('app');
-
-  if (state.loading) {
-    app.innerHTML = `<div class="state-wrap">${skeletonPost()}</div>`;
-    return;
-  }
-
-  const post = state.posts.find(p => p.slug === slug);
-
-  if (!post) {
-    document.title = `Not Found — ${CONFIG.blogName}`;
+    const app = document.getElementById('app');
+    
+    if (state.loading) {
+        app.innerHTML = skeletonPost();
+        return;
+    }
+    
+    const post = state.posts.find(p => p.slug === slug);
+    
+    if (!post) {
+        document.title = 'Not Found — ' + CONFIG.blogName;
+        app.innerHTML = `
+            <div class="state fade-in">
+                <div class="state__icon">404</div>
+                <h1 class="state__title">Post not found</h1>
+                <p class="state__desc">The post "${slug}" doesn't exist.</p>
+                <a href="#/" class="btn">Back to Home</a>
+            </div>
+        `;
+        return;
+    }
+    
+    state.currentPost = post;
+    document.title = `${post.title} — ${CONFIG.blogName}`;
+    
+    const toc = generateTOC(post.html);
+    const recommendations = getRecommendations(post.slug);
+    
     app.innerHTML = `
-      <div class="state-wrap fade-in" role="alert">
-        <a href="#/" class="post__back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          All posts
-        </a>
-        <p class="state-error__label">404</p>
-        <h1 class="state-error__title">Post not found</h1>
-        <p class="state-error__msg">No post matching "${sanitizeText(slug)}" exists.</p>
-        <a href="#/" class="btn">All posts</a>
-      </div>`;
-    return;
-  }
-
-  document.title = `${post.title} — ${CONFIG.blogName}`;
-
-  /* Recommendations: exclude current, pick up to 3 */
-  const recs = state.posts.filter(p => p.slug !== slug).slice(0, 3);
-
-  const tocHTML = buildTOC(post.headings);
-  const recsHTML = buildRecommendations(recs);
-
-  app.innerHTML = `
-    <div class="post-view fade-in">
-
-      <!-- TOC (left) -->
-      <aside class="toc-col" aria-label="Table of contents">
-        ${tocHTML}
-      </aside>
-
-      <!-- Main content (center) -->
-      <div class="article-col">
-        <a href="#/" class="post__back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          All posts
-        </a>
-        <header class="post__header">
-          <div class="post__eyebrow">
-            <time class="post__date" datetime="${post.date}">${formatDate(post.date)}</time>
-            <span class="post__rt">${post.readingTime}</span>
-          </div>
-          <h1 class="post__title">${post.title}</h1>
-          ${post.description ? `<p class="post__desc">${post.description}</p>` : ''}
-        </header>
-        <article class="article" id="article-content">
-          ${post.html}
-        </article>
-      </div>
-
-      <!-- Recommendations (right) -->
-      <aside class="aside-col" aria-label="More posts">
-        ${recsHTML}
-      </aside>
-
-    </div>`;
-
-  window.scrollTo({ top: 0, behavior: 'instant' });
-
-  // Wire up copy buttons
-  wireCopyButtons();
-
-  // Wire up TOC scroll tracking
-  if (post.headings.length) wireTOC();
+        <div class="post-layout fade-in">
+            <aside class="post-toc">
+                <h2 class="toc__title">Contents</h2>
+                <nav class="toc__list">
+                    ${toc}
+                </nav>
+            </aside>
+            
+            <article class="post-content">
+                <a href="#/" class="post__back">← Back</a>
+                <header class="post__header">
+                    <div class="post__meta">
+                        <span>${formatDate(post.date)}</span>
+                        <span>${post.readingTime}</span>
+                    </div>
+                    <h1 class="post__title">${post.title}</h1>
+                </header>
+                <div class="article">${post.html}</div>
+            </article>
+            
+            <aside class="post-recommendations">
+                <h2 class="rec__title">More Posts</h2>
+                <div class="rec__list">
+                    ${recommendations}
+                </div>
+            </aside>
+        </div>
+    `;
+    
+    setupTOCHighlight();
+    window.scrollTo(0, 0);
 }
 
-/* ─── TOC ─────────────────────────────────────────────────────── */
+/* ========================================
+   TABLE OF CONTENTS
+   ======================================== */
 
-function buildTOC(headings) {
-  if (!headings.length) return '';
-
-  const items = headings.map(h => `
-    <li class="toc__item">
-      <button
-        class="toc__link toc__link--h${h.level}"
-        data-id="${escAttr(h.id)}"
-        type="button"
-        aria-label="Go to section: ${escAttr(h.text)}"
-      >${escAttr(h.text)}</button>
-    </li>`).join('');
-
-  return `
-    <nav class="toc" aria-label="On this page">
-      <p class="toc__label">On this page</p>
-      <ul class="toc__list">${items}</ul>
-    </nav>`;
+function generateTOC(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    const headings = temp.querySelectorAll('h1, h2, h3');
+    if (!headings.length) return '<p style="opacity: 0.5; font-size: 0.75rem;">No headings</p>';
+    
+    return Array.from(headings).map(h => {
+        const level = h.tagName.toLowerCase();
+        const text = h.textContent;
+        const id = h.id || slugify(text);
+        h.id = id;
+        
+        return `
+            <div class="toc__item">
+                <a href="#${id}" class="toc__link toc__link--${level}" data-target="${id}">
+                    ${text}
+                </a>
+            </div>
+        `;
+    }).join('');
 }
 
-function wireTOC() {
-  const tocLinks = document.querySelectorAll('.toc__link');
-  if (!tocLinks.length) return;
-
-  // Scroll to section on click — does NOT navigate away
-  tocLinks.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const id  = btn.dataset.id;
-      const el  = document.getElementById(id);
-      if (!el) return;
-
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-      // Update active state immediately
-      tocLinks.forEach(l => l.classList.remove('toc__link--active'));
-      btn.classList.add('toc__link--active');
-    });
-  });
-
-  // Highlight on scroll via IntersectionObserver
-  const headingEls = Array.from(
-    document.querySelectorAll('.article h1, .article h2, .article h3, .article h4')
-  );
-
-  if (!headingEls.length || !('IntersectionObserver' in window)) return;
-
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const id = entry.target.id;
-        tocLinks.forEach(l => {
-          l.classList.toggle('toc__link--active', l.dataset.id === id);
+function setupTOCHighlight() {
+    const links = document.querySelectorAll('.toc__link');
+    
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.dataset.target;
+            const target = document.getElementById(targetId);
+            
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                links.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Update URL without triggering route change
+                history.replaceState(null, '', `${window.location.hash.split('#')[0]}#${targetId}`);
+            }
         });
-      }
     });
-  }, { rootMargin: '-20% 0px -70% 0px' });
-
-  headingEls.forEach(el => observer.observe(el));
-}
-
-/* ─── RECOMMENDATIONS ─────────────────────────────────────────── */
-
-function buildRecommendations(posts) {
-  if (!posts.length) return '';
-
-  const items = posts.map(p => `
-    <a class="aside__item" href="#/post/${p.slug}" aria-label="${escAttr(p.title)}">
-      <p class="aside__item-meta">${formatDate(p.date)}</p>
-      <p class="aside__item-title">${p.title}</p>
-    </a>`).join('');
-
-  return `
-    <div>
-      <p class="aside__label">More posts</p>
-      <div class="aside__list">${items}</div>
-    </div>`;
-}
-
-/* ─── COPY CODE BUTTONS ───────────────────────────────────────── */
-
-function wireCopyButtons() {
-  document.querySelectorAll('.code-copy').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const code = btn.closest('pre')?.querySelector('code');
-      if (!code) return;
-
-      try {
-        await navigator.clipboard.writeText(code.textContent || '');
-        btn.textContent = 'Copied!';
-        btn.classList.add('code-copy--copied');
-        setTimeout(() => {
-          btn.textContent = 'Copy';
-          btn.classList.remove('code-copy--copied');
-        }, 2000);
-      } catch {
-        btn.textContent = 'Failed';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-      }
+    
+    // Highlight on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                links.forEach(link => {
+                    link.classList.toggle('active', link.dataset.target === id);
+                });
+            }
+        });
+    }, { rootMargin: '-100px 0px -80% 0px' });
+    
+    document.querySelectorAll('.article h1, .article h2, .article h3').forEach(h => {
+        if (h.id) observer.observe(h);
     });
-  });
 }
 
-/* ─── SKELETONS ───────────────────────────────────────────────── */
+/* ========================================
+   RECOMMENDATIONS
+   ======================================== */
+
+function getRecommendations(currentSlug) {
+    const others = state.posts.filter(p => p.slug !== currentSlug);
+    const recommended = others.slice(0, 3);
+    
+    if (!recommended.length) {
+        return '<p style="opacity: 0.5; font-size: 0.75rem;">No other posts</p>';
+    }
+    
+    return recommended.map(p => `
+        <a href="#/post/${p.slug}" class="rec__card">
+            <h3 class="rec__card-title">${p.title}</h3>
+            <div class="rec__card-meta">${formatDate(p.date)}</div>
+        </a>
+    `).join('');
+}
+
+/* ========================================
+   SKELETONS
+   ======================================== */
 
 function skeletonHome() {
-  const card = () => `
-    <div class="skel-card">
-      <div>
-        <div class="skeleton skel-tag"></div>
-        <div class="skeleton skel-ctitle"></div>
-        <div class="skeleton skel-cdesc"></div>
-      </div>
-      <div class="skel-meta">
-        <div class="skeleton skel-date"></div>
-        <div class="skeleton skel-rt"></div>
-      </div>
-    </div>`;
-
-  return `
-    <div class="skel-home">
-      <div class="skel-title-block">
-        <div class="skeleton skel-eyebrow"></div>
-        <div class="skeleton skel-h1"></div>
-        <div class="skeleton skel-desc"></div>
-      </div>
-      ${card()}${card()}${card()}${card()}
-    </div>`;
+    return `
+        <div class="skeleton-home">
+            <div class="skeleton skeleton-home__title"></div>
+            <div class="skeleton skeleton-home__desc"></div>
+            <div class="skeleton-cards">
+                ${Array(3).fill(`
+                    <div class="skeleton-card">
+                        <div class="skeleton skeleton-card__meta"></div>
+                        <div class="skeleton skeleton-card__title"></div>
+                        <div class="skeleton skeleton-card__desc"></div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
 
 function skeletonPost() {
-  return `
-    <div style="padding-top: var(--sp-12);">
-      <div class="skeleton" style="height:10px;width:64px;margin-bottom:var(--sp-10);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:10px;width:120px;margin-bottom:var(--sp-5);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:48px;width:72%;margin-bottom:var(--sp-4);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:16px;width:50%;margin-bottom:var(--sp-12);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:14px;width:90%;margin-bottom:var(--sp-3);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:14px;width:80%;margin-bottom:var(--sp-3);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:14px;width:85%;margin-bottom:var(--sp-3);border-radius:var(--r-sm)"></div>
-      <div class="skeleton" style="height:14px;width:60%;border-radius:var(--r-sm)"></div>
-    </div>`;
+    return `
+        <div style="max-width: 740px; margin: 0 auto;">
+            <div class="skeleton" style="height: 36px; width: 80px; margin-bottom: var(--space-10);"></div>
+            <div class="skeleton" style="height: 48px; width: 70%; margin-bottom: var(--space-12);"></div>
+            <div class="skeleton" style="height: 20px; width: 100%; margin-bottom: var(--space-4);"></div>
+            <div class="skeleton" style="height: 20px; width: 90%; margin-bottom: var(--space-4);"></div>
+            <div class="skeleton" style="height: 20px; width: 95%;"></div>
+        </div>
+    `;
 }
 
-/* ─── UTILITIES ───────────────────────────────────────────────── */
+/* ========================================
+   UTILITIES
+   ======================================== */
 
 function formatDate(str) {
-  if (!str || str === '1970-01-01') return '';
-  try {
-    const d = new Date(str.trim() + 'T12:00:00Z');
-    if (isNaN(d.getTime())) return str;
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
-  } catch { return str; }
+    if (!str || str === '1970-01-01') return '';
+    try {
+        const d = new Date(str + 'T00:00:00');
+        if (isNaN(d)) return str;
+        return d.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch {
+        return str;
+    }
 }
 
-function calcReadingTime(text) {
-  const words = text.trim().split(/\s+/).length;
-  const mins  = Math.max(1, Math.ceil(words / 220));
-  return `${mins} min read`;
+function estimateReadingTime(text) {
+    const words = text.trim().split(/\s+/).length;
+    const mins = Math.max(1, Math.ceil(words / 200));
+    return `${mins} min read`;
 }
 
-function slugToTitle(slug) {
-  return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+function toTitleCase(slug) {
+    return slug
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
 }
