@@ -61,7 +61,6 @@ function setupFootnoteHandler() {
         const href = link.getAttribute('href');
         if (!href) return;
         
-        // Handle footnote links (starts with # but not #/)
         if (href.startsWith('#') && !href.startsWith('#/')) {
             e.preventDefault();
             e.stopPropagation();
@@ -70,27 +69,10 @@ function setupFootnoteHandler() {
             const target = document.getElementById(targetId);
             
             if (target) {
-                // Smooth scroll
                 target.scrollIntoView({ 
                     behavior: 'smooth', 
                     block: 'center' 
                 });
-                
-                // Highlight effect for footnote item
-                if (targetId.startsWith('fn-')) {
-                    target.classList.add('highlight');
-                    setTimeout(() => {
-                        target.classList.remove('highlight');
-                    }, 2000);
-                }
-                
-                // Highlight effect for reference in text
-                if (targetId.startsWith('fnref-')) {
-                    target.classList.add('highlight');
-                    setTimeout(() => {
-                        target.classList.remove('highlight');
-                    }, 2000);
-                }
             }
             
             return false;
@@ -561,23 +543,21 @@ function parseMarkdown(text) {
     
     // Footnotes section
     // Footnotes section
+    // Footnotes section
     if (footnotes.length > 0) {
         html += `<div class="footnotes">
             <div class="footnotes-header">
-                <i class="fa-solid fa-bookmark"></i>
+                <i class="fa-solid fa-asterisk"></i>
                 <span>References</span>
             </div>
             <ol>\n`;
         footnotes.forEach((fn, index) => {
             html += `<li id="fn-${fn.id}">
-                <span class="fn-number">${index + 1}</span>
+                <span class="fn-number">${index + 1}.</span>
                 <div class="fn-content">
                     <p>${processInline(fn.text)}</p>
                 </div>
-                <a href="#fnref-${fn.id}" class="fn-back">
-                    <i class="fa-solid fa-arrow-up"></i>
-                    Back
-                </a>
+                <a href="#fnref-${fn.id}" class="fn-back">↑</a>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
