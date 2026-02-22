@@ -895,92 +895,153 @@ button {
 }
 
 /* =============================================
-   FOOTNOTES — FIXED NAVIGATION
+   FOOTNOTES — ULTRA SLEEK
    ============================================= */
 
-.article sup a[data-footnote-ref] {
-    color: var(--fg);
-    text-decoration: none;
-    font-weight: var(--fw-semibold);
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    margin: 0 2px;
-    transition: all 0.2s var(--timing);
-    font-size: 0.75em;
+/* Footnote Reference in Text */
+.article sup {
+    line-height: 0;
+    vertical-align: baseline;
+    position: relative;
+    top: -0.4em;
 }
 
-.article sup a[data-footnote-ref]:hover {
-    background: var(--fg);
+.article sup a.footnote-ref {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--bg);
-    border-color: var(--fg);
+    background: var(--fg);
+    text-decoration: none;
+    font-weight: var(--fw-bold);
+    font-size: 0.625rem;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--radius-full);
+    margin: 0 1px;
+    transition: all 0.2s var(--timing);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+.article sup a.footnote-ref:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Footnotes Section */
 .article .footnotes {
     margin-top: var(--space-16);
-    padding-top: var(--space-8);
-    border-top: 2px solid var(--border);
+    padding: var(--space-8);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
 }
 
-.article .footnotes::before {
-    content: 'Footnotes';
-    display: block;
+.article .footnotes-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     font-size: var(--fs-xs);
     font-weight: var(--fw-bold);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.5;
+    letter-spacing: 0.1em;
+    color: var(--muted);
     margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border);
+}
+
+.article .footnotes-title i {
+    font-size: 0.625rem;
 }
 
 .article .footnotes ol {
     list-style: none;
     counter-reset: footnote;
     padding-left: 0;
+    margin: 0;
 }
 
 .article .footnotes li {
     counter-increment: footnote;
-    position: relative;
-    padding-left: var(--space-10);
-    margin-bottom: var(--space-5);
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.article .footnotes li:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .article .footnotes li::before {
     content: counter(footnote);
-    position: absolute;
-    left: 0;
-    top: 0;
-    font-size: var(--fs-xs);
+    flex-shrink: 0;
+    font-size: 0.625rem;
     font-weight: var(--fw-bold);
-    color: var(--muted);
-    width: 28px;
-    height: 28px;
+    color: var(--bg);
+    background: var(--fg);
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-full);
+    margin-top: 2px;
 }
 
 .article .footnotes li p {
-    margin-bottom: var(--space-3);
+    flex: 1;
+    margin: 0;
     font-size: var(--fs-sm);
     color: var(--muted);
+    line-height: 1.6;
 }
 
-.article .footnotes li a[data-footnote-backref] {
-    font-size: var(--fs-sm);
-    opacity: 0.6;
-    margin-left: var(--space-2);
+.article .footnotes li a.footnote-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--subtle);
     text-decoration: none;
-    transition: opacity 0.2s var(--timing);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s var(--timing);
+    white-space: nowrap;
 }
 
-.article .footnotes li a[data-footnote-backref]:hover {
-    opacity: 1;
+.article .footnotes li a.footnote-back i {
+    font-size: 0.5rem;
+}
+
+.article .footnotes li a.footnote-back:hover {
+    color: var(--fg);
+    background: var(--surface-2);
+}
+
+/* Highlight Animation When Scrolled To */
+.article .footnotes li.highlight {
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+    margin-left: calc(-1 * var(--space-3));
+    margin-right: calc(-1 * var(--space-3));
+}
+
+.article sup a.footnote-ref.highlight {
+    animation: footnote-pulse 0.6s ease;
+}
+
+@keyframes footnote-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
 }
 
 /* =============================================
