@@ -1,1081 +1,1597 @@
-/* =============================================================================
- *  N3E6X BLOG ENGINE — 2025/2026 EDITION
- *  Ultra Sleek • Secure • Performant
- *  =============================================================================
- *
- *  SETUP INSTRUCTIONS:
- *  1. Update CONFIG with your GitHub username and repository name
- *  2. Create .md files in the /posts directory with frontmatter:
- *
- *  ---
- *  title: Your Post Title
- *  date: 2025-01-15
- *  description: A brief summary of the post.
- *  tags: javascript, web
- *  ---
- *
- *  Your markdown content here...
- *
- *  3. Push to GitHub and enable GitHub Pages
- *
- *  ============================================================================= */
+/* ==========================================================================
+ *  N3E6X BLOG — 2025/2026 DESIGN SYSTEM
+ *  Ultra Sleek • Apple-Inspired • Modern
+ *  ========================================================================== */
 
-const CONFIG = {
-    github: {
-        username: 'N3E6X',      // ← Your GitHub username
-        repo: 'Blog',           // ← Your repository name
-        branch: 'main'
-    },
-    postsDir: 'posts',
-    blogName: 'N3E6X',
-    blogDescription: 'Exploring ideas at the intersection of technology, design, and human experience.'
-};
+/* --------------------------------------------------------------------------
+ *  DESIGN TOKENS
+ *  -------------------------------------------------------------------------- */
 
-/* =============================================================================
- *  APPLICATION STATE
- *  ============================================================================= */
+:root {
+    /* Color Palette - Dark Mode (Default) */
+    --color-bg-primary: #050505;
+    --color-bg-secondary: #0a0a0a;
+    --color-bg-tertiary: #111111;
+    --color-bg-elevated: #161616;
+    --color-bg-glass: rgba(255, 255, 255, 0.03);
+    --color-bg-glass-hover: rgba(255, 255, 255, 0.06);
 
-const state = {
-    posts: [],
-    loading: true,
-    error: null,
-    currentPost: null,
-    tocObserver: null
-};
+    --color-text-primary: #fafafa;
+    --color-text-secondary: rgba(255, 255, 255, 0.7);
+    --color-text-tertiary: rgba(255, 255, 255, 0.4);
+    --color-text-quaternary: rgba(255, 255, 255, 0.2);
 
-/* =============================================================================
- *  INITIALIZATION
- *  ============================================================================= */
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-subtle: rgba(255, 255, 255, 0.04);
+    --color-border-focus: rgba(255, 255, 255, 0.3);
 
-document.addEventListener('DOMContentLoaded', async () => {
-    initTheme();
-    initReadingProgress();
+    --color-accent: #0071e3;
+    --color-accent-hover: #0077ed;
+    --color-accent-subtle: rgba(0, 113, 227, 0.15);
 
-    window.addEventListener('hashchange', handleRoute);
+    /* Ambient Colors */
+    --color-ambient-1: rgba(99, 102, 241, 0.15);
+    --color-ambient-2: rgba(139, 92, 246, 0.1);
+    --color-ambient-3: rgba(59, 130, 246, 0.08);
 
-    // Initial render with loading state
-    handleRoute();
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
-    // Load posts
-    await loadPosts();
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
 
-    // Re-render with data
-    handleRoute();
-});
+    /* Type Scale - Fluid */
+    --text-xs: clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);
+    --text-sm: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
+    --text-base: clamp(0.9375rem, 0.9rem + 0.18vw, 1rem);
+    --text-lg: clamp(1.0625rem, 1rem + 0.3vw, 1.125rem);
+    --text-xl: clamp(1.1875rem, 1.1rem + 0.4vw, 1.25rem);
+    --text-2xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.5rem);
+    --text-3xl: clamp(1.75rem, 1.5rem + 1.2vw, 2rem);
+    --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 2.75rem);
+    --text-5xl: clamp(2.75rem, 2rem + 3vw, 3.5rem);
+    --text-6xl: clamp(3.25rem, 2.2rem + 4.5vw, 4.5rem);
+    --text-hero: clamp(3.5rem, 2rem + 6vw, 6rem);
 
-/* =============================================================================
- *  THEME MANAGEMENT
- *  ============================================================================= */
+    /* Line Heights */
+    --leading-none: 1;
+    --leading-tight: 1.15;
+    --leading-snug: 1.3;
+    --leading-normal: 1.6;
+    --leading-relaxed: 1.75;
 
-function initTheme() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
+    /* Letter Spacing */
+    --tracking-tighter: -0.05em;
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
 
-    // Check for saved preference or system preference
-    const savedTheme = localStorage.getItem('n3e6x-theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    /* Spacing Scale */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+    --space-32: 8rem;
+    --space-40: 10rem;
 
-    setTheme(theme);
+    /* Layout */
+    --max-width: 1400px;
+    --content-width: 720px;
+    --sidebar-width: 240px;
+    --header-height: 64px;
 
-    toggle.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('n3e6x-theme', newTheme);
-    });
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-2xl: 28px;
+    --radius-full: 9999px;
 
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (!localStorage.getItem('n3e6x-theme')) {
-            setTheme(e.matches ? 'dark' : 'light');
-        }
-    });
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+
+    /* Transitions */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+    --duration-slower: 600ms;
+
+    /* Z-Index Scale */
+    --z-base: 0;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal: 400;
+    --z-toast: 500;
 }
 
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    const toggle = document.getElementById('theme-toggle');
-    if (toggle) {
-        toggle.setAttribute('aria-pressed', theme === 'light');
+/* Light Mode */
+[data-theme="light"] {
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #fafafa;
+    --color-bg-tertiary: #f5f5f5;
+    --color-bg-elevated: #ffffff;
+    --color-bg-glass: rgba(0, 0, 0, 0.02);
+    --color-bg-glass-hover: rgba(0, 0, 0, 0.04);
+
+    --color-text-primary: #0a0a0a;
+    --color-text-secondary: rgba(0, 0, 0, 0.65);
+    --color-text-tertiary: rgba(0, 0, 0, 0.4);
+    --color-text-quaternary: rgba(0, 0, 0, 0.2);
+
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-subtle: rgba(0, 0, 0, 0.04);
+    --color-border-focus: rgba(0, 0, 0, 0.2);
+
+    --color-ambient-1: rgba(99, 102, 241, 0.08);
+    --color-ambient-2: rgba(139, 92, 246, 0.06);
+    --color-ambient-3: rgba(59, 130, 246, 0.05);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.15);
+    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+ *  RESET & BASE
+ *  -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+html::-webkit-scrollbar {
+    width: 8px;
+}
+
+html::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--leading-normal);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+}
+
+::selection {
+    background: var(--color-accent);
+    color: white;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img, video, svg {
+    display: block;
+    max-width: 100%;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+/* --------------------------------------------------------------------------
+ *  AMBIENT BACKGROUND
+ *  -------------------------------------------------------------------------- */
+
+.ambient-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -2;
+}
+
+.ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.6;
+    animation: float 20s ease-in-out infinite;
+}
+
+.ambient-orb--1 {
+    width: 600px;
+    height: 600px;
+    background: var(--color-ambient-1);
+    top: -200px;
+    right: -100px;
+    animation-delay: 0s;
+}
+
+.ambient-orb--2 {
+    width: 500px;
+    height: 500px;
+    background: var(--color-ambient-2);
+    bottom: -150px;
+    left: -100px;
+    animation-delay: -7s;
+}
+
+.ambient-orb--3 {
+    width: 400px;
+    height: 400px;
+    background: var(--color-ambient-3);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -14s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -30px) scale(1.05); }
+    50% { transform: translate(-20px, 20px) scale(0.95); }
+    75% { transform: translate(20px, 30px) scale(1.02); }
+}
+
+/* --------------------------------------------------------------------------
+ *  GRAIN TEXTURE
+ *  -------------------------------------------------------------------------- */
+
+.grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .grain {
+    opacity: 0.02;
+}
+
+/* --------------------------------------------------------------------------
+ *  SKIP LINK
+ *  -------------------------------------------------------------------------- */
+
+.skip-link {
+    position: fixed;
+    top: var(--space-4);
+    left: var(--space-4);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transform: translateY(-120%);
+    opacity: 0;
+    z-index: var(--z-toast);
+    transition: all var(--duration-normal) var(--ease-out);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+    opacity: 1;
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* --------------------------------------------------------------------------
+ *  HEADER & NAVIGATION
+ *  -------------------------------------------------------------------------- */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--color-bg-primary);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--color-border-subtle);
+    transition: background var(--duration-normal) var(--ease-out);
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-glass);
+    pointer-events: none;
+}
+
+.nav {
+    position: relative;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.logo:hover {
+    opacity: 0.7;
+}
+
+.logo-mark {
+    width: 32px;
+    height: 32px;
+    color: var(--color-text-primary);
+}
+
+.logo-mark svg {
+    width: 100%;
+    height: 100%;
+}
+
+.logo-text {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+}
+
+.nav-end {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+    position: relative;
+    width: 56px;
+    height: 32px;
+    padding: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    transition: all var(--duration-normal) var(--ease-out);
+}
+
+.theme-toggle:hover {
+    background: var(--color-bg-glass-hover);
+    border-color: var(--color-border-focus);
+}
+
+.theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-accent);
+}
+
+.theme-toggle-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-full);
+    padding: 2px;
+}
+
+.theme-toggle-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--duration-normal) var(--ease-spring);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .theme-toggle-thumb {
+    transform: translateX(24px);
+}
+
+.theme-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--color-bg-primary);
+    position: absolute;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.theme-icon--sun {
+    opacity: 1;
+}
+
+.theme-icon--moon {
+    opacity: 0;
+}
+
+[data-theme="light"] .theme-icon--sun {
+    opacity: 0;
+}
+
+[data-theme="light"] .theme-icon--moon {
+    opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+ *  MAIN CONTENT AREA
+ *  -------------------------------------------------------------------------- */
+
+.main {
+    flex: 1;
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-12) var(--space-6) var(--space-20);
+}
+
+.app {
+    width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+ *  FOOTER
+ *  -------------------------------------------------------------------------- */
+
+.footer {
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-secondary);
+    padding: var(--space-8) var(--space-6);
+}
+
+.footer-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.footer-logo {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+}
+
+.footer-year {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+.footer-tagline {
+    font-size: var(--text-xs);
+    color: var(--color-text-quaternary);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+ *  READING PROGRESS BAR
+ *  -------------------------------------------------------------------------- */
+
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: var(--z-fixed);
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-out);
+    pointer-events: none;
+}
+
+.reading-progress.visible {
+    opacity: 1;
+}
+
+.reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--color-accent), #8b5cf6);
+    transition: width 50ms linear;
+}
+
+/* --------------------------------------------------------------------------
+ *  HOME PAGE
+ *  -------------------------------------------------------------------------- */
+
+.home {
+    animation: fadeUp var(--duration-slow) var(--ease-out);
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-/* =============================================================================
- *  READING PROGRESS
- *  ============================================================================= */
-
-function initReadingProgress() {
-    const progressEl = document.getElementById('reading-progress');
-    if (!progressEl) return;
-
-    let ticking = false;
-
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                updateReadingProgress(progressEl);
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }, { passive: true });
+.home-hero {
+    max-width: 800px;
+    margin-bottom: var(--space-16);
 }
 
-function updateReadingProgress(progressEl) {
-    const article = document.querySelector('.article');
-    if (!article) {
-        progressEl.classList.remove('visible');
-        return;
-    }
-
-    const articleRect = article.getBoundingClientRect();
-    const articleTop = articleRect.top + window.scrollY;
-    const articleHeight = article.offsetHeight;
-    const windowHeight = window.innerHeight;
-    const scrolled = window.scrollY;
-
-    const start = articleTop - windowHeight;
-    const end = articleTop + articleHeight;
-    const progress = Math.max(0, Math.min(1, (scrolled - start) / (end - start)));
-
-    const bar = progressEl.querySelector('.reading-progress-bar');
-    if (bar) {
-        bar.style.width = `${progress * 100}%`;
-    }
-
-    progressEl.classList.toggle('visible', progress > 0 && progress < 1);
+.home-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-accent-subtle);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    margin-bottom: var(--space-6);
 }
 
-/* =============================================================================
- *  ROUTING
- *  ============================================================================= */
+.home-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    animation: pulse-dot 2s ease-in-out infinite;
+}
 
-function handleRoute() {
-    const hash = (window.location.hash || '#/').replace('#', '');
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
 
-    // Clean up previous observers
-    if (state.tocObserver) {
-        state.tocObserver.disconnect();
-        state.tocObserver = null;
-    }
+.home-title {
+    font-size: var(--text-hero);
+    font-weight: var(--font-weight-extrabold);
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-tighter);
+    margin-bottom: var(--space-6);
+    background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
 
-    if (hash.startsWith('/post/')) {
-        const slug = decodeURIComponent(hash.replace('/post/', ''));
-        renderPost(slug);
-    } else {
-        renderHome();
+.home-description {
+    font-size: var(--text-xl);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+    max-width: 600px;
+}
+
+/* Posts Grid */
+.posts-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.posts-section-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-tertiary);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+}
+
+.posts-count {
+    font-size: var(--text-xs);
+    color: var(--color-text-quaternary);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-bg-glass);
+    border-radius: var(--radius-full);
+}
+
+.posts-grid {
+    display: grid;
+    gap: var(--space-4);
+}
+
+/* Post Card */
+.post-card {
+    display: block;
+    padding: var(--space-6);
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-xl);
+    transition: all var(--duration-normal) var(--ease-out);
+    cursor: pointer;
+}
+
+.post-card:hover {
+    background: var(--color-bg-glass-hover);
+    border-color: var(--color-border);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.post-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-accent);
+}
+
+.post-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.post-card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+.post-card-date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.post-card-date::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-accent);
+}
+
+.post-card-reading {
+    opacity: 0.6;
+}
+
+.post-card-title {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-3);
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.post-card:hover .post-card-title {
+    color: var(--color-accent);
+}
+
+.post-card-description {
+    font-size: var(--text-base);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-normal);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.post-card-footer {
+    display: flex;
+    align-items: center;
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.post-card-read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    transition: gap var(--duration-fast) var(--ease-out);
+}
+
+.post-card:hover .post-card-read-more {
+    gap: var(--space-3);
+}
+
+.post-card-read-more svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* --------------------------------------------------------------------------
+ *  POST PAGE - THREE COLUMN LAYOUT
+ *  -------------------------------------------------------------------------- */
+
+.post-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-10);
+    animation: fadeUp var(--duration-slow) var(--ease-out);
+}
+
+@media (min-width: 1024px) {
+    .post-layout {
+        grid-template-columns: var(--sidebar-width) minmax(0, var(--content-width)) var(--sidebar-width);
+        gap: var(--space-12);
+        justify-content: center;
     }
 }
 
-/* =============================================================================
- *  DATA LOADING
- *  ============================================================================= */
-
-async function loadPosts() {
-    state.loading = true;
-    state.error = null;
-
-    if (CONFIG.github.username === 'YOUR_USERNAME') {
-        state.error = 'Please configure your GitHub username and repository in script.js';
-        state.loading = false;
-        return;
-    }
-
-    try {
-        await loadViaGitHubAPI();
-    } catch (apiErr) {
-        console.warn('GitHub API failed:', apiErr.message);
-        try {
-            await loadViaManifest();
-        } catch (manErr) {
-            console.warn('Manifest fallback failed:', manErr.message);
-            try {
-                await loadViaDirectFetch();
-            } catch (directErr) {
-                state.error = 'Unable to load posts. Please check your configuration.';
-            }
-        }
-    }
-
-    state.loading = false;
+/* Back Button */
+.post-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-tertiary);
+    padding: var(--space-2) var(--space-4);
+    margin-left: calc(var(--space-4) * -1);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--ease-out);
+    margin-bottom: var(--space-8);
 }
 
-async function loadViaGitHubAPI() {
-    const { username, repo, branch } = CONFIG.github;
-    const url = `https://api.github.com/repos/${username}/${repo}/contents/${CONFIG.postsDir}?ref=${branch}`;
+.post-back:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-glass);
+}
 
-    const res = await fetch(url, {
-        headers: {
-            'Accept': 'application/vnd.github.v3+json'
-        }
-    });
+.post-back svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
 
-    if (!res.ok) {
-        const info = await res.json().catch(() => ({}));
-        throw new Error(info.message || `API responded with ${res.status}`);
+.post-back:hover svg {
+    transform: translateX(-3px);
+}
+
+/* Table of Contents - Left Sidebar */
+.post-toc {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .post-toc {
+        display: block;
+        position: sticky;
+        top: calc(var(--header-height) + var(--space-8));
+        max-height: calc(100vh - var(--header-height) - var(--space-16));
+        overflow-y: auto;
+        padding-right: var(--space-4);
+        scrollbar-width: none;
     }
 
-    const files = await res.json();
-    const mdFiles = files.filter(f => f.name.endsWith('.md') && f.type === 'file');
+    .post-toc::-webkit-scrollbar {
+        display: none;
+    }
+}
 
-    const posts = await Promise.all(
-        mdFiles.map(file => fetchAndParsePost(file.name, file.download_url))
+.toc-header {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-tertiary);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.toc-item {
+    position: relative;
+}
+
+.toc-link {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    line-height: var(--leading-snug);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid transparent;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.toc-link:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-glass);
+}
+
+.toc-link.active {
+    color: var(--color-accent);
+    background: var(--color-accent-subtle);
+    border-left-color: var(--color-accent);
+}
+
+.toc-link--h3 {
+    padding-left: var(--space-6);
+    font-size: var(--text-xs);
+}
+
+.toc-link--h4 {
+    padding-left: var(--space-8);
+    font-size: var(--text-xs);
+}
+
+/* Post Main Content - Center */
+.post-main {
+    max-width: var(--content-width);
+    width: 100%;
+}
+
+/* Post Header */
+.post-header {
+    margin-bottom: var(--space-10);
+    padding-bottom: var(--space-8);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.post-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.post-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+}
+
+.post-meta-item svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.post-meta-divider {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-border);
+}
+
+.post-title {
+    font-size: var(--text-5xl);
+    font-weight: var(--font-weight-extrabold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tighter);
+    margin-bottom: var(--space-4);
+}
+
+.post-description {
+    font-size: var(--text-xl);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+}
+
+/* Recommendations - Right Sidebar */
+.post-sidebar {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .post-sidebar {
+        display: block;
+        position: sticky;
+        top: calc(var(--header-height) + var(--space-8));
+    }
+}
+
+.sidebar-section {
+    margin-bottom: var(--space-8);
+}
+
+.sidebar-header {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-tertiary);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.recommendation-card {
+    display: block;
+    padding: var(--space-4);
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-3);
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.recommendation-card:hover {
+    background: var(--color-bg-glass-hover);
+    border-color: var(--color-border);
+    transform: translateX(3px);
+}
+
+.recommendation-card-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-snug);
+    margin-bottom: var(--space-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.recommendation-card-meta {
+    font-size: var(--text-xs);
+    color: var(--color-text-quaternary);
+}
+
+/* --------------------------------------------------------------------------
+ *  ARTICLE CONTENT (Rendered Markdown)
+ *  -------------------------------------------------------------------------- */
+
+.article {
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+}
+
+/* Headings */
+.article h1,
+.article h2,
+.article h3,
+.article h4,
+.article h5,
+.article h6 {
+    font-weight: var(--font-weight-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    margin-top: var(--space-12);
+    margin-bottom: var(--space-4);
+    scroll-margin-top: calc(var(--header-height) + var(--space-6));
+}
+
+.article h1:first-child,
+.article h2:first-child,
+.article h3:first-child {
+    margin-top: 0;
+}
+
+.article h1 { font-size: var(--text-4xl); }
+.article h2 { font-size: var(--text-3xl); }
+.article h3 { font-size: var(--text-2xl); }
+.article h4 { font-size: var(--text-xl); }
+.article h5 { font-size: var(--text-lg); }
+.article h6 { font-size: var(--text-base); color: var(--color-text-secondary); }
+
+/* Anchor links for headings */
+.article h1 a,
+.article h2 a,
+.article h3 a,
+.article h4 a,
+.article h5 a,
+.article h6 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Paragraphs */
+.article p {
+    margin-bottom: var(--space-6);
+}
+
+/* Links */
+.article a:not(.heading-anchor) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.article a:not(.heading-anchor):hover {
+    text-decoration-thickness: 2px;
+}
+
+/* Bold & Italic */
+.article strong {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.article em {
+    font-style: italic;
+}
+
+/* Strikethrough */
+.article del {
+    color: var(--color-text-tertiary);
+    text-decoration: line-through;
+}
+
+/* Subscript & Superscript */
+.article sub,
+.article sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+}
+
+.article sup { top: -0.5em; }
+.article sub { bottom: -0.25em; }
+
+/* Highlight/Mark */
+.article mark {
+    background: linear-gradient(135deg, var(--color-accent-subtle), rgba(139, 92, 246, 0.2));
+    color: inherit;
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-sm);
+}
+
+/* Lists */
+.article ul,
+.article ol {
+    margin-bottom: var(--space-6);
+    padding-left: var(--space-6);
+}
+
+.article ul { list-style-type: disc; }
+.article ol { list-style-type: decimal; }
+
+.article li {
+    margin-bottom: var(--space-2);
+    padding-left: var(--space-2);
+}
+
+.article li::marker {
+    color: var(--color-accent);
+}
+
+/* Nested lists */
+.article ul ul,
+.article ol ol,
+.article ul ol,
+.article ol ul {
+    margin-top: var(--space-2);
+    margin-bottom: 0;
+}
+
+/* Task Lists */
+.article .task-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.article .task-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding-left: 0;
+}
+
+.article .task-list-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 0.2em;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-glass);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.article .task-list-item input[type="checkbox"]:checked {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.article .task-list-item input[type="checkbox"]:checked::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: 2px solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+    margin-left: 5px;
+    margin-top: 1px;
+}
+
+/* Blockquotes */
+.article blockquote {
+    position: relative;
+    margin: var(--space-8) 0;
+    padding: var(--space-6) var(--space-8);
+    background: var(--color-bg-glass);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.article blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+.article blockquote cite {
+    display: block;
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    font-style: normal;
+}
+
+.article blockquote cite::before {
+    content: '— ';
+}
+
+/* Inline Code */
+.article code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+}
+
+.article :not(pre) > code {
+    padding: 0.15em 0.4em;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-accent);
+    white-space: nowrap;
+}
+
+/* Code Blocks */
+.article pre {
+    position: relative;
+    margin: var(--space-8) 0;
+    padding: var(--space-6);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.article pre code {
+    display: block;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-text-primary);
+    white-space: pre;
+}
+
+/* Code block language label */
+.article pre::before {
+    content: attr(data-lang);
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-quaternary);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+}
+
+/* Horizontal Rule */
+.article hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border), transparent);
+    margin: var(--space-12) 0;
+}
+
+/* Images */
+.article img {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    margin: var(--space-8) 0;
+    box-shadow: var(--shadow-lg);
+}
+
+.article figure {
+    margin: var(--space-8) 0;
+}
+
+.article figcaption {
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    margin-top: var(--space-3);
+}
+
+/* Tables */
+.article table {
+    width: 100%;
+    margin: var(--space-8) 0;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.article th,
+.article td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.article th {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    font-size: var(--text-xs);
+    background: var(--color-bg-glass);
+}
+
+.article tr:hover td {
+    background: var(--color-bg-glass);
+}
+
+/* Footnotes */
+.article .footnotes {
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.article .footnote-ref {
+    font-size: 0.75em;
+    vertical-align: super;
+    color: var(--color-accent);
+}
+
+/* Abbreviations */
+.article abbr {
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    cursor: help;
+}
+
+/* Definition Lists */
+.article dl {
+    margin: var(--space-6) 0;
+}
+
+.article dt {
+    font-weight: var(--font-weight-semibold);
+    margin-top: var(--space-4);
+}
+
+.article dd {
+    margin-left: var(--space-6);
+    color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+ *  LOADING SKELETONS
+ *  -------------------------------------------------------------------------- */
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--color-bg-tertiary) 0%,
+                                var(--color-bg-glass-hover) 50%,
+                                var(--color-bg-tertiary) 100%
     );
-
-    state.posts = posts
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
 }
 
-async function loadViaManifest() {
-    const res = await fetch('./posts.json');
-    if (!res.ok) throw new Error('No posts.json found');
-
-    const filenames = await res.json();
-
-    const posts = await Promise.all(
-        filenames.map(name => fetchAndParsePost(name, null))
-    );
-
-    state.posts = posts
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
-async function loadViaDirectFetch() {
-    // Try fetching a known test file
-    const res = await fetch(`./${CONFIG.postsDir}/`);
-    if (!res.ok) throw new Error('Cannot access posts directory');
-    throw new Error('Directory listing not supported');
+.skeleton-card {
+    padding: var(--space-6);
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-4);
 }
 
-async function fetchAndParsePost(filename, downloadUrl) {
-    try {
-        // Try local path first (faster, no rate limits)
-        let res = await fetch(`./${CONFIG.postsDir}/${filename}`, {
-            cache: 'no-cache',
-            headers: { 'Accept': 'text/plain' }
-        });
+.skeleton-line {
+    height: 1em;
+    margin-bottom: var(--space-3);
+}
 
-        // Fallback to raw GitHub URL
-        if (!res.ok && downloadUrl) {
-            res = await fetch(downloadUrl);
-        }
+.skeleton-line--sm { width: 30%; height: 0.8em; }
+.skeleton-line--md { width: 60%; }
+.skeleton-line--lg { width: 85%; }
+.skeleton-line--xl { width: 100%; }
 
-        if (!res.ok) return null;
+.skeleton-title {
+    height: 1.5em;
+    width: 70%;
+    margin-bottom: var(--space-4);
+}
 
-        const raw = await res.text();
-        return parsePost(filename, raw);
-    } catch (e) {
-        console.warn(`Failed to load ${filename}:`, e);
-        return null;
+/* --------------------------------------------------------------------------
+ *  ERROR & EMPTY STATES
+ *  -------------------------------------------------------------------------- */
+
+.state-message {
+    text-align: center;
+    padding: var(--space-20) var(--space-8);
+    animation: fadeUp var(--duration-slow) var(--ease-out);
+}
+
+.state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--space-6);
+    color: var(--color-text-quaternary);
+}
+
+.state-title {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-4);
+}
+
+.state-description {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-8);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --------------------------------------------------------------------------
+ *  BUTTONS
+ *  -------------------------------------------------------------------------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-lg);
+    transition: all var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+}
+
+.btn--primary {
+    background: var(--color-accent);
+    color: white;
+    border: none;
+}
+
+.btn--primary:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn--secondary {
+    background: var(--color-bg-glass);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}
+
+.btn--secondary:hover {
+    background: var(--color-bg-glass-hover);
+    border-color: var(--color-border-focus);
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-accent);
+}
+
+/* --------------------------------------------------------------------------
+ *  MOBILE TABLE OF CONTENTS
+ *  -------------------------------------------------------------------------- */
+
+.mobile-toc {
+    display: block;
+    margin-bottom: var(--space-8);
+}
+
+@media (min-width: 1024px) {
+    .mobile-toc {
+        display: none;
     }
 }
 
-/* =============================================================================
- *  PARSING — FRONTMATTER & METADATA
- *  ============================================================================= */
-
-function parsePost(filename, raw) {
-    // Normalize line endings
-    raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-    const { meta, content } = parseFrontmatter(raw);
-    const slug = filename.replace(/\.md$/i, '');
-
-    // Extract headings for TOC
-    const headings = extractHeadings(content);
-
-    return {
-        slug,
-        filename,
-        title: sanitizeText(meta.title) || toTitleCase(slug),
-        date: meta.date || '1970-01-01',
-        description: sanitizeText(meta.description) || '',
-        tags: meta.tags ? meta.tags.split(',').map(t => t.trim()) : [],
-        content,
-        html: parseMarkdown(content),
-        headings,
-        readingTime: estimateReadingTime(content),
-        wordCount: countWords(content)
-    };
+.mobile-toc-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    transition: all var(--duration-fast) var(--ease-out);
 }
 
-function parseFrontmatter(raw) {
-    const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-    if (!match) return { meta: {}, content: raw };
+.mobile-toc-toggle:hover {
+    background: var(--color-bg-glass-hover);
+    border-color: var(--color-border);
+}
 
-    const meta = {};
-    const lines = match[1].split('\n');
+.mobile-toc-toggle svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
 
-    for (const line of lines) {
-        const idx = line.indexOf(':');
-        if (idx === -1) continue;
+.mobile-toc-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
 
-        const key = line.slice(0, idx).trim().toLowerCase();
-        let val = line.slice(idx + 1).trim();
+.mobile-toc-content {
+    display: none;
+    padding: var(--space-4);
+    margin-top: var(--space-2);
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+}
 
-        // Remove surrounding quotes
-        if (/^["'].*["']$/.test(val)) {
-            val = val.slice(1, -1);
-        }
+.mobile-toc-content.open {
+    display: block;
+    animation: fadeUp var(--duration-fast) var(--ease-out);
+}
 
-        meta[key] = val;
+/* --------------------------------------------------------------------------
+ *  RESPONSIVE ADJUSTMENTS
+ *  -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+    .main {
+        padding: var(--space-8) var(--space-4) var(--space-16);
     }
 
-    return { meta, content: match[2].trim() };
-}
-
-function extractHeadings(content) {
-    const headings = [];
-    const lines = content.split('\n');
-
-    for (const line of lines) {
-        const match = line.match(/^(#{1,4})\s+(.+)$/);
-        if (match) {
-            const level = match[1].length;
-            const text = match[2].trim();
-            const id = slugify(text);
-            headings.push({ level, text, id });
-        }
+    .nav {
+        padding: 0 var(--space-4);
     }
 
-    return headings;
-}
-
-/* =============================================================================
- *  PARSING — MARKDOWN TO HTML
- *  ============================================================================= */
-
-function parseMarkdown(text) {
-    if (!text) return '';
-
-    const lines = text.split('\n');
-    let html = '';
-
-    // Parser state
-    let inCode = false;
-    let codeLang = '';
-    let codeLines = [];
-    let inList = false;
-    let listTag = '';
-    let inBlockquote = false;
-    let bqLines = [];
-    let paraLines = [];
-    let inTable = false;
-    let tableRows = [];
-
-    function inline(str) {
-        // Escape HTML first (security)
-        str = escapeHtml(str);
-
-        // Inline code (process first to protect content)
-        str = str.replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`);
-
-        // Images
-        str = str.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
-            const safeSrc = sanitizeUrl(src);
-            const safeAlt = escapeAttr(alt);
-            return `<img src="${safeSrc}" alt="${safeAlt}" loading="lazy">`;
-        });
-
-        // Links
-        str = str.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
-            const safeHref = sanitizeUrl(href);
-            return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-        });
-
-        // Bold + Italic
-        str = str.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-
-        // Bold
-        str = str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        str = str.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-        // Italic
-        str = str.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
-        str = str.replace(/(?<!_)_([^_\n]+)_(?!_)/g, '<em>$1</em>');
-
-        // Strikethrough
-        str = str.replace(/~~(.+?)~~/g, '<del>$1</del>');
-
-        // Highlight/Mark
-        str = str.replace(/==(.+?)==/g, '<mark>$1</mark>');
-
-        // Superscript
-        str = str.replace(/\^([^\s^]+)\^/g, '<sup>$1</sup>');
-
-        // Subscript
-        str = str.replace(/~([^\s~]+)~/g, '<sub>$1</sub>');
-
-        return str;
+    .post-title {
+        font-size: var(--text-4xl);
     }
 
-    function flushPara() {
-        if (paraLines.length) {
-            html += `<p>${inline(paraLines.join(' '))}</p>\n`;
-            paraLines = [];
-        }
+    .home-title {
+        font-size: var(--text-5xl);
     }
 
-    function flushList() {
-        if (inList) {
-            html += `</${listTag}>\n`;
-            inList = false;
-            listTag = '';
-        }
-    }
-
-    function flushBQ() {
-        if (inBlockquote) {
-            html += `<p>${inline(bqLines.join(' '))}</p>\n</blockquote>\n`;
-            inBlockquote = false;
-            bqLines = [];
-        }
-    }
-
-    function flushTable() {
-        if (inTable && tableRows.length > 0) {
-            let tableHtml = '<table>\n';
-
-            // Header row
-            const headerCells = tableRows[0].split('|').filter(c => c.trim());
-            tableHtml += '<thead><tr>';
-            for (const cell of headerCells) {
-                tableHtml += `<th>${inline(cell.trim())}</th>`;
-            }
-            tableHtml += '</tr></thead>\n';
-
-            // Body rows (skip separator row at index 1)
-            if (tableRows.length > 2) {
-                tableHtml += '<tbody>\n';
-                for (let i = 2; i < tableRows.length; i++) {
-                    const cells = tableRows[i].split('|').filter(c => c.trim());
-                    tableHtml += '<tr>';
-                    for (const cell of cells) {
-                        tableHtml += `<td>${inline(cell.trim())}</td>`;
-                    }
-                    tableHtml += '</tr>\n';
-                }
-                tableHtml += '</tbody>\n';
-            }
-
-            tableHtml += '</table>\n';
-            html += tableHtml;
-
-            inTable = false;
-            tableRows = [];
-        }
-    }
-
-    function flushAll() {
-        flushPara();
-        flushList();
-        flushBQ();
-        flushTable();
-    }
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Code blocks
-        if (line.trim().startsWith('```')) {
-            if (inCode) {
-                html += `<pre data-lang="${escapeAttr(codeLang)}"><code class="language-${escapeAttr(codeLang)}">${escapeHtml(codeLines.join('\n'))}</code></pre>\n`;
-                inCode = false;
-                codeLines = [];
-                codeLang = '';
-            } else {
-                flushAll();
-                inCode = true;
-                codeLang = line.trim().slice(3).trim() || 'text';
-            }
-            continue;
-        }
-
-        if (inCode) {
-            codeLines.push(line);
-            continue;
-        }
-
-        // Blank line
-        if (line.trim() === '') {
-            flushAll();
-            continue;
-        }
-
-        // Table detection
-        if (line.includes('|') && line.trim().startsWith('|')) {
-            flushPara();
-            flushList();
-            flushBQ();
-
-            if (!inTable) {
-                inTable = true;
-            }
-            tableRows.push(line.trim());
-            continue;
-        } else if (inTable) {
-            flushTable();
-        }
-
-        // Headings
-        const hm = line.match(/^(#{1,6})\s+(.+)$/);
-        if (hm) {
-            flushAll();
-            const lvl = hm[1].length;
-            const text = hm[2].trim();
-            const id = slugify(text);
-            html += `<h${lvl} id="${escapeAttr(id)}">${inline(text)}</h${lvl}>\n`;
-            continue;
-        }
-
-        // Horizontal rule
-        if (/^(\s*[-*_]\s*){3,}$/.test(line.trim())) {
-            flushAll();
-            html += '<hr>\n';
-            continue;
-        }
-
-        // Blockquote
-        const bqm = line.match(/^>\s?(.*)$/);
-        if (bqm) {
-            flushPara();
-            flushList();
-            if (!inBlockquote) {
-                html += '<blockquote>\n';
-                inBlockquote = true;
-            }
-            bqLines.push(bqm[1]);
-            continue;
-        }
-        if (inBlockquote) flushBQ();
-
-        // Task list
-        const taskMatch = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
-        if (taskMatch) {
-            flushPara();
-            flushBQ();
-            if (!inList || listTag !== 'ul') {
-                flushList();
-                html += '<ul class="task-list">\n';
-                inList = true;
-                listTag = 'ul';
-            }
-            const checked = taskMatch[1].toLowerCase() === 'x' ? 'checked' : '';
-            html += `<li class="task-list-item"><input type="checkbox" ${checked} disabled>${inline(taskMatch[2])}</li>\n`;
-            continue;
-        }
-
-        // Unordered list
-        const ulm = line.match(/^\s*[-*+]\s+(.+)$/);
-        if (ulm) {
-            flushPara();
-            flushBQ();
-            if (!inList || listTag !== 'ul') {
-                flushList();
-                html += '<ul>\n';
-                inList = true;
-                listTag = 'ul';
-            }
-            html += `<li>${inline(ulm[1])}</li>\n`;
-            continue;
-        }
-
-        // Ordered list
-        const olm = line.match(/^\s*\d+\.\s+(.+)$/);
-        if (olm) {
-            flushPara();
-            flushBQ();
-            if (!inList || listTag !== 'ol') {
-                flushList();
-                html += '<ol>\n';
-                inList = true;
-                listTag = 'ol';
-            }
-            html += `<li>${inline(olm[1])}</li>\n`;
-            continue;
-        }
-
-        // Paragraph text
-        flushList();
-        flushBQ();
-        paraLines.push(line.trim());
-    }
-
-    flushAll();
-    return html;
-}
-
-/* =============================================================================
- *  SECURITY UTILITIES
- *  ============================================================================= */
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function escapeAttr(str) {
-    return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function sanitizeText(str) {
-    if (!str) return '';
-    return str.replace(/<[^>]*>/g, '').trim();
-}
-
-function sanitizeUrl(url) {
-    if (!url) return '';
-
-    // Allow only safe protocols
-    const safeProtocols = ['http:', 'https:', 'mailto:', './'];
-    const lower = url.toLowerCase().trim();
-
-    // Check for javascript: or data: URLs
-    if (lower.startsWith('javascript:') || lower.startsWith('data:')) {
-        return '#';
-    }
-
-    // Relative URLs are safe
-    if (url.startsWith('./') || url.startsWith('../') || url.startsWith('/') || url.startsWith('#')) {
-        return url;
-    }
-
-    // Check protocol
-    try {
-        const parsed = new URL(url);
-        if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
-            return '#';
-        }
-    } catch {
-        // If parsing fails, it might be a relative path
-        return url;
-    }
-
-    return url;
-}
-
-function slugify(text) {
-    return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/* =============================================================================
- *  RENDERING — HOME PAGE
- *  ============================================================================= */
-
-function renderHome() {
-    const app = document.getElementById('app');
-    document.title = CONFIG.blogName;
-
-    if (state.loading) {
-        app.innerHTML = renderSkeletonList(4);
-        return;
-    }
-
-    if (state.error) {
-        app.innerHTML = renderErrorState(state.error);
-        return;
-    }
-
-    if (!state.posts.length) {
-        app.innerHTML = renderEmptyState();
-        return;
-    }
-
-    const postsHtml = state.posts.map(post => `
-    <a href="#/post/${encodeURIComponent(post.slug)}" class="post-card" aria-label="Read: ${escapeAttr(post.title)}">
-    <div class="post-card-header">
-    <div class="post-card-meta">
-    <span class="post-card-date">${formatDate(post.date)}</span>
-    <span class="post-card-reading">${post.readingTime}</span>
-    </div>
-    </div>
-    <h2 class="post-card-title">${escapeHtml(post.title)}</h2>
-    ${post.description ? `<p class="post-card-description">${escapeHtml(post.description)}</p>` : ''}
-    <div class="post-card-footer">
-    <span class="post-card-read-more">
-    Read article
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-    <path d="M5 12h14M12 5l7 7-7 7"/>
-    </svg>
-    </span>
-    </div>
-    </a>
-    `).join('');
-
-    app.innerHTML = `
-    <section class="home">
-    <header class="home-hero">
-    <div class="home-badge">Blog</div>
-    <h1 class="home-title">${escapeHtml(CONFIG.blogName)}</h1>
-    <p class="home-description">${escapeHtml(CONFIG.blogDescription)}</p>
-    </header>
-
-    <div class="posts-section">
-    <div class="posts-section-header">
-    <span class="posts-section-title">Latest Posts</span>
-    <span class="posts-count">${state.posts.length} articles</span>
-    </div>
-    <div class="posts-grid" role="feed" aria-label="Blog posts">
-    ${postsHtml}
-    </div>
-    </div>
-    </section>
-    `;
-}
-
-/* =============================================================================
- *  RENDERING — POST PAGE
- *  ============================================================================= */
-
-function renderPost(slug) {
-    const app = document.getElementById('app');
-
-    if (state.loading) {
-        app.innerHTML = renderSkeletonPost();
-        return;
-    }
-
-    const post = state.posts.find(p => p.slug === slug);
-
-    if (!post) {
-        document.title = `Not Found — ${CONFIG.blogName}`;
-        app.innerHTML = renderNotFoundState(slug);
-        return;
-    }
-
-    document.title = `${post.title} — ${CONFIG.blogName}`;
-    state.currentPost = post;
-
-    // Generate TOC
-    const tocHtml = renderTOC(post.headings);
-
-    // Generate recommendations
-    const recommendations = getRecommendations(post, state.posts, 3);
-    const recommendationsHtml = renderRecommendations(recommendations);
-
-    app.innerHTML = `
-    <article class="post-layout" aria-label="${escapeAttr(post.title)}">
-    <!-- Table of Contents - Left Sidebar -->
-    <aside class="post-toc" aria-label="Table of contents">
-    <div class="toc-header">On this page</div>
-    <nav class="toc-list">
-    ${tocHtml}
-    </nav>
-    </aside>
-
-    <!-- Main Content - Center -->
-    <div class="post-main">
-    <a href="#/" class="post-back">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-    <path d="M19 12H5M12 19l-7-7 7-7"/>
-    </svg>
-    Back to posts
-    </a>
-
-    <!-- Mobile TOC -->
-    <div class="mobile-toc">
-    <button class="mobile-toc-toggle" aria-expanded="false" aria-controls="mobile-toc-content">
-    <span>Table of Contents</span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-    <path d="M6 9l6 6 6-6"/>
-    </svg>
-    </button>
-    <nav id="mobile-toc-content" class="mobile-toc-content" aria-label="Table of contents">
-    ${tocHtml}
-    </nav>
-    </div>
-
-    <header class="post-header">
-    <div class="post-meta">
-    <span class="post-meta-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <rect x="3" y="4" width="18" height="18" rx="2"/>
-    <path d="M16 2v4M8 2v4M3 10h18"/>
-    </svg>
-    ${formatDate(post.date)}
-    </span>
-    <span class="post-meta-divider"></span>
-    <span class="post-meta-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M12 6v6l4 2"/>
-    </svg>
-    ${post.readingTime}
-    </span>
-    <span class="post-meta-divider"></span>
-    <span class="post-meta-item">
-    ${post.wordCount.toLocaleString()} words
-    </span>
-    </div>
-    <h1 class="post-title">${escapeHtml(post.title)}</h1>
-    ${post.description ? `<p class="post-description">${escapeHtml(post.description)}</p>` : ''}
-    </header>
-
-    <div class="article">
-    ${post.html}
-    </div>
-    </div>
-
-    <!-- Recommendations - Right Sidebar -->
-    <aside class="post-sidebar" aria-label="Recommended posts">
-    ${recommendationsHtml}
-    </aside>
-    </article>
-    `;
-
-    // Setup interactions
-    setupTOCObserver(post.headings);
-    setupMobileTOC();
-
-    // Scroll to top
-    window.scrollTo(0, 0);
-}
-
-function renderTOC(headings) {
-    if (!headings || headings.length === 0) {
-        return '<span class="toc-empty">No headings</span>';
-    }
-
-    return headings.map(h => {
-        const levelClass = `toc-link--h${h.level}`;
-        return `
-        <div class="toc-item">
-        <a href="#${escapeAttr(h.id)}" class="toc-link ${levelClass}" data-heading-id="${escapeAttr(h.id)}">
-        ${escapeHtml(h.text)}
-        </a>
-        </div>
-        `;
-    }).join('');
-}
-
-function renderRecommendations(posts) {
-    if (!posts || posts.length === 0) {
-        return '';
-    }
-
-    const cardsHtml = posts.map(post => `
-    <a href="#/post/${encodeURIComponent(post.slug)}" class="recommendation-card">
-    <h4 class="recommendation-card-title">${escapeHtml(post.title)}</h4>
-    <span class="recommendation-card-meta">${formatDate(post.date)}</span>
-    </a>
-    `).join('');
-
-    return `
-    <div class="sidebar-section">
-    <div class="sidebar-header">Recommended</div>
-    ${cardsHtml}
-    </div>
-    `;
-}
-
-function getRecommendations(currentPost, allPosts, count) {
-    // Filter out current post and get others
-    const otherPosts = allPosts.filter(p => p.slug !== currentPost.slug);
-
-    // Simple recommendation: most recent posts (can be enhanced with tag matching)
-    return otherPosts.slice(0, count);
-}
-
-function setupTOCObserver(headings) {
-    if (!headings || headings.length === 0) return;
-
-    const headingEls = headings
-    .map(h => document.getElementById(h.id))
-    .filter(Boolean);
-
-    if (headingEls.length === 0) return;
-
-    state.tocObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Remove active from all
-                    document.querySelectorAll('.toc-link').forEach(link => {
-                        link.classList.remove('active');
-                    });
-
-                    // Add active to current
-                    const id = entry.target.getAttribute('id');
-                    const activeLink = document.querySelector(`.toc-link[data-heading-id="${id}"]`);
-                    if (activeLink) {
-                        activeLink.classList.add('active');
-                    }
-                }
-            });
-        },
-        {
-            rootMargin: '-80px 0px -80% 0px',
-            threshold: 0
-        }
-    );
-
-    headingEls.forEach(el => state.tocObserver.observe(el));
-}
-
-function setupMobileTOC() {
-    const toggle = document.querySelector('.mobile-toc-toggle');
-    const content = document.querySelector('.mobile-toc-content');
-
-    if (!toggle || !content) return;
-
-    toggle.addEventListener('click', () => {
-        const expanded = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', !expanded);
-        content.classList.toggle('open', !expanded);
-    });
-
-    // Close on link click
-    content.querySelectorAll('.toc-link').forEach(link => {
-        link.addEventListener('click', () => {
-            toggle.setAttribute('aria-expanded', 'false');
-            content.classList.remove('open');
-        });
-    });
-}
-
-/* =============================================================================
- *  RENDERING — STATES
- *  ============================================================================= */
-
-function renderSkeletonList(count) {
-    const items = Array(count).fill(0).map(() => `
-    <div class="skeleton-card">
-    <div class="skeleton skeleton-line skeleton-line--sm"></div>
-    <div class="skeleton skeleton-title"></div>
-    <div class="skeleton skeleton-line skeleton-line--lg"></div>
-    <div class="skeleton skeleton-line skeleton-line--md"></div>
-    </div>
-    `).join('');
-
-    return `
-    <section class="home">
-    <header class="home-hero">
-    <div class="skeleton skeleton-line skeleton-line--sm" style="width: 60px; margin-bottom: var(--space-6);"></div>
-    <div class="skeleton" style="height: 3rem; width: 50%; margin-bottom: var(--space-6);"></div>
-    <div class="skeleton skeleton-line skeleton-line--lg"></div>
-    </header>
-    <div class="posts-grid">
-    ${items}
-    </div>
-    </section>
-    `;
-}
-
-function renderSkeletonPost() {
-    return `
-    <div class="post-layout">
-    <div class="post-toc">
-    <div class="skeleton skeleton-line" style="width: 80%; margin-bottom: var(--space-3);"></div>
-    <div class="skeleton skeleton-line" style="width: 60%; margin-bottom: var(--space-3);"></div>
-    <div class="skeleton skeleton-line" style="width: 70%;"></div>
-    </div>
-    <div class="post-main">
-    <div class="skeleton skeleton-line skeleton-line--sm" style="margin-bottom: var(--space-8);"></div>
-    <div class="post-header" style="border: none;">
-    <div class="skeleton skeleton-line skeleton-line--sm" style="margin-bottom: var(--space-4);"></div>
-    <div class="skeleton" style="height: 2.5rem; width: 80%; margin-bottom: var(--space-4);"></div>
-    <div class="skeleton skeleton-line skeleton-line--lg"></div>
-    </div>
-    <div style="margin-top: var(--space-8);">
-    <div class="skeleton skeleton-line skeleton-line--xl" style="margin-bottom: var(--space-3);"></div>
-    <div class="skeleton skeleton-line skeleton-line--lg" style="margin-bottom: var(--space-3);"></div>
-    <div class="skeleton skeleton-line skeleton-line--md" style="margin-bottom: var(--space-3);"></div>
-    <div class="skeleton skeleton-line skeleton-line--lg"></div>
-    </div>
-    </div>
-    <div class="post-sidebar"></div>
-    </div>
-    `;
-}
-
-function renderErrorState(message) {
-    return `
-    <div class="state-message" role="alert">
-    <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M12 8v4M12 16h.01"/>
-    </svg>
-    <h1 class="state-title">Something went wrong</h1>
-    <p class="state-description">${escapeHtml(message)}</p>
-    <button class="btn btn--primary" onclick="location.reload()">
-    Try again
-    </button>
-    </div>
-    `;
-}
-
-function renderEmptyState() {
-    return `
-    <div class="state-message">
-    <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <path d="M14 2v6h6M12 18v-6M9 15h6"/>
-    </svg>
-    <h1 class="state-title">No posts yet</h1>
-    <p class="state-description">Add markdown files to the posts/ folder to get started.</p>
-    </div>
-    `;
-}
-
-function renderNotFoundState(slug) {
-    return `
-    <div class="state-message" role="alert">
-    <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-    <circle cx="11" cy="11" r="8"/>
-    <path d="M21 21l-4.35-4.35"/>
-    <path d="M11 8v6M8 11h6"/>
-    </svg>
-    <h1 class="state-title">Post not found</h1>
-    <p class="state-description">No post matching "${escapeHtml(slug)}" exists.</p>
-    <a href="#/" class="btn btn--primary">
-    Back to posts
-    </a>
-    </div>
-    `;
-}
-
-/* =============================================================================
- *  UTILITIES
- *  ============================================================================= */
-
-function formatDate(str) {
-    if (!str || str === '1970-01-01') return '';
-
-    try {
-        const d = new Date(str.trim() + 'T00:00:00');
-        if (isNaN(d.getTime())) return str;
-
-        return d.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    } catch {
-        return str;
+    .article pre {
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        margin-left: calc(var(--space-4) * -1);
+        margin-right: calc(var(--space-4) * -1);
     }
 }
 
-function estimateReadingTime(text) {
-    const words = countWords(text);
-    const mins = Math.max(1, Math.ceil(words / 200));
-    return `${mins} min read`;
-}
+/* --------------------------------------------------------------------------
+ *  PRINT STYLES
+ *  -------------------------------------------------------------------------- */
 
-function countWords(text) {
-    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
-}
+@media print {
+    .header,
+    .footer,
+    .post-toc,
+    .post-sidebar,
+    .post-back,
+    .reading-progress,
+    .ambient-bg,
+    .grain {
+        display: none !important;
+    }
 
-function toTitleCase(slug) {
-    return slug
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+    body {
+        background: white;
+        color: black;
+    }
+
+    .post-layout {
+        display: block;
+    }
+
+    .article a::after {
+        content: ' (' attr(href) ')';
+        font-size: 0.8em;
+        color: #666;
+    }
 }
