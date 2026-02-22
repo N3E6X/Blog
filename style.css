@@ -137,6 +137,11 @@ button {
     cursor: pointer;
 }
 
+a, button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
 ::selection {
     background: var(--fg);
     color: var(--bg);
