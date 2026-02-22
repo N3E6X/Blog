@@ -53,7 +53,6 @@ function setupTheme() {
 /* =============================================
    FOOTNOTE HANDLER — PREVENTS NAVIGATION
    ============================================= */
-
 function setupFootnoteHandler() {
     document.addEventListener('click', (e) => {
         const link = e.target.closest('a');
@@ -77,19 +76,21 @@ function setupFootnoteHandler() {
                     block: 'center' 
                 });
                 
-                // Add highlight effect
-                const highlightEl = target.closest('li') || target;
-                highlightEl.classList.add('highlight');
-                
-                // Also highlight if it's a reference link
-                if (targetId.startsWith('fnref-')) {
+                // Highlight effect for footnote item
+                if (targetId.startsWith('fn-')) {
                     target.classList.add('highlight');
+                    setTimeout(() => {
+                        target.classList.remove('highlight');
+                    }, 2000);
                 }
                 
-                setTimeout(() => {
-                    highlightEl.classList.remove('highlight');
-                    target.classList.remove('highlight');
-                }, 2000);
+                // Highlight effect for reference in text
+                if (targetId.startsWith('fnref-')) {
+                    target.classList.add('highlight');
+                    setTimeout(() => {
+                        target.classList.remove('highlight');
+                    }, 2000);
+                }
             }
             
             return false;
@@ -559,15 +560,23 @@ function parseMarkdown(text) {
     flushAll();
     
     // Footnotes section
+    // Footnotes section
     if (footnotes.length > 0) {
         html += `<div class="footnotes">
-            <p class="footnotes-title"><i class="fa-solid fa-bookmark"></i> References</p>
+            <div class="footnotes-header">
+                <i class="fa-solid fa-bookmark"></i>
+                <span>References</span>
+            </div>
             <ol>\n`;
-        footnotes.forEach(fn => {
+        footnotes.forEach((fn, index) => {
             html += `<li id="fn-${fn.id}">
-                <p>${processInline(fn.text)}</p>
-                <a href="#fnref-${fn.id}" class="footnote-back">
-                    <i class="fa-solid fa-turn-up"></i> return
+                <span class="fn-number">${index + 1}</span>
+                <div class="fn-content">
+                    <p>${processInline(fn.text)}</p>
+                </div>
+                <a href="#fnref-${fn.id}" class="fn-back">
+                    <i class="fa-solid fa-arrow-up"></i>
+                    Back
                 </a>
             </li>\n`;
         });
