@@ -59,7 +59,7 @@ For scientific notation: H<sub>2</sub>O and E=mc<sup>2</sup>
 
 Inline `code` looks like this.
 
-```javascript
+```python
 function greet(name) {
   return `Hello, ${name}!`;
 }
