@@ -71,17 +71,25 @@ function setupFootnoteHandler() {
             const target = document.getElementById(targetId);
             
             if (target) {
+                // Smooth scroll
                 target.scrollIntoView({ 
                     behavior: 'smooth', 
-                    block: 'start' 
+                    block: 'center' 
                 });
                 
-                // Highlight effect
-                target.style.transition = 'background 0.3s ease';
-                target.style.background = 'var(--surface-2)';
+                // Add highlight effect
+                const highlightEl = target.closest('li') || target;
+                highlightEl.classList.add('highlight');
+                
+                // Also highlight if it's a reference link
+                if (targetId.startsWith('fnref-')) {
+                    target.classList.add('highlight');
+                }
+                
                 setTimeout(() => {
-                    target.style.background = '';
-                }, 1500);
+                    highlightEl.classList.remove('highlight');
+                    target.classList.remove('highlight');
+                }, 2000);
             }
             
             return false;
@@ -548,15 +556,14 @@ function parseMarkdown(text) {
     // Footnotes section
     if (footnotes.length > 0) {
         html += `<div class="footnotes">
-            <p class="footnotes-title"><i class="fa-solid fa-asterisk"></i> Footnotes</p>
+            <p class="footnotes-title"><i class="fa-solid fa-bookmark"></i> References</p>
             <ol>\n`;
         footnotes.forEach(fn => {
             html += `<li id="fn-${fn.id}">
-                <p>${processInline(fn.text)} 
-                    <a href="#fnref-${fn.id}" class="footnote-back">
-                        <i class="fa-solid fa-arrow-turn-up"></i> back
-                    </a>
-                </p>
+                <p>${processInline(fn.text)}</p>
+                <a href="#fnref-${fn.id}" class="footnote-back">
+                    <i class="fa-solid fa-turn-up"></i> return
+                </a>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
