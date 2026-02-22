@@ -1,6 +1,6 @@
-/* ========================================
+/* =============================================
    N3E6X BLOG ENGINE — 2026 EDITION
-   ======================================== */
+   ============================================= */
 
 const CONFIG = {
     github: {
@@ -20,9 +20,9 @@ const state = {
     currentPost: null
 };
 
-/* ========================================
+/* =============================================
    INITIALIZATION
-   ======================================== */
+   ============================================= */
 
 document.addEventListener('DOMContentLoaded', async () => {
     setupTheme();
@@ -31,9 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleRoute();
 });
 
-/* ========================================
+/* =============================================
    THEME
-   ======================================== */
+   ============================================= */
 
 function setupTheme() {
     const btn = document.getElementById('theme-toggle');
@@ -49,9 +49,9 @@ function setupTheme() {
     });
 }
 
-/* ========================================
+/* =============================================
    ROUTING
-   ======================================== */
+   ============================================= */
 
 function setupRouter() {
     window.addEventListener('hashchange', handleRoute);
@@ -61,7 +61,7 @@ function handleRoute() {
     const hash = window.location.hash.slice(1) || '/';
     
     if (hash.startsWith('/post/')) {
-        const slug = hash.replace('/post/', '');
+        const slug = hash.replace('/post/', '').split('#')[0];
         renderPost(slug);
     } else {
         renderHome();
@@ -72,9 +72,9 @@ function navigate(path) {
     window.location.hash = path;
 }
 
-/* ========================================
+/* =============================================
    DATA LOADING
-   ======================================== */
+   ============================================= */
 
 async function loadPosts() {
     state.loading = true;
@@ -146,9 +146,9 @@ async function fetchPost(filename, downloadUrl) {
     }
 }
 
-/* ========================================
+/* =============================================
    MARKDOWN PARSING
-   ======================================== */
+   ============================================= */
 
 function parsePost(filename, raw) {
     raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -199,16 +199,46 @@ function parseMarkdown(text) {
     let inBlockquote = false;
     let bqLines = [];
     let paraLines = [];
+    let footnotes = [];
+    let footnoteCounter = 0;
+    let inTable = false;
+    let tableLines = [];
     
     function inline(str) {
+        // Footnotes - convert [^1] to superscript links
+        str = str.replace(/\[\^(\w+)\]/g, (match, id) => {
+            const existingRef = footnotes.find(fn => fn.id === id);
+            if (!existingRef) {
+                footnoteCounter++;
+            }
+            const num = existingRef ? existingRef.num : footnoteCounter;
+            return `<sup><a href="#fn-${id}" id="fnref-${id}" data-footnote-ref>${num}</a></sup>`;
+        });
+        
+        // Inline code (process first to protect content)
         str = str.replace(/`([^`]+)`/g, (_, c) => `<code>${esc(c)}</code>`);
+        
+        // Images
         str = str.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+        
+        // Links
         str = str.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        // Bold + Italic
         str = str.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        
+        // Bold
         str = str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Italic
         str = str.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+        
+        // Strikethrough
         str = str.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        
+        // Highlight
         str = str.replace(/==(.+?)==/g, '<mark>$1</mark>');
+        
         return str;
     }
     
@@ -235,17 +265,42 @@ function parseMarkdown(text) {
         }
     }
     
+    function flushTable() {
+        if (inTable && tableLines.length > 0) {
+            html += parseTable(tableLines);
+            tableLines = [];
+            inTable = false;
+        }
+    }
+    
     function flushAll() {
         flushPara();
         flushList();
         flushBQ();
+        flushTable();
     }
     
-    for (let line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
         // Code blocks
         if (line.trim().startsWith('```')) {
             if (inCode) {
-                html += `<pre><code${codeLang ? ` class="language-${codeLang}"` : ''}>${esc(codeLines.join('\n'))}</code></pre>\n`;
+                const codeContent = esc(codeLines.join('\n'));
+                const langDisplay = codeLang || 'text';
+                const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+                
+                html += `
+                    <div class="code-block" id="${codeId}">
+                        <div class="code-block__header">
+                            <span class="code-block__lang">${langDisplay}</span>
+                            <button class="code-block__copy" onclick="copyCode(this)" aria-label="Copy code">
+                                <span class="copy-text">Copy</span>
+                            </button>
+                        </div>
+                        <pre><code${codeLang ? ` class="language-${codeLang}"` : ''}>${codeContent}</code></pre>
+                    </div>\n`;
+                
                 inCode = false;
                 codeLines = [];
                 codeLang = '';
@@ -260,6 +315,33 @@ function parseMarkdown(text) {
         if (inCode) {
             codeLines.push(line);
             continue;
+        }
+        
+        // Footnote definitions [^1]: Text
+        const fnDefMatch = line.match(/^\[\^(\w+)\]:\s*(.+)$/);
+        if (fnDefMatch) {
+            flushAll();
+            const existingFn = footnotes.find(fn => fn.id === fnDefMatch[1]);
+            if (!existingFn) {
+                footnotes.push({
+                    id: fnDefMatch[1],
+                    text: fnDefMatch[2],
+                    num: footnotes.length + 1
+                });
+            }
+            continue;
+        }
+        
+        // Table detection
+        if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+            flushPara();
+            flushList();
+            flushBQ();
+            inTable = true;
+            tableLines.push(line);
+            continue;
+        } else if (inTable) {
+            flushTable();
         }
         
         // Blank line
@@ -300,6 +382,22 @@ function parseMarkdown(text) {
         }
         if (inBlockquote) flushBQ();
         
+        // Task list items - [ ] or [x]
+        const taskMatch = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/);
+        if (taskMatch) {
+            flushPara();
+            flushBQ();
+            if (!inList || listTag !== 'ul-task') {
+                flushList();
+                html += '<ul class="task-list">\n';
+                inList = true;
+                listTag = 'ul-task';
+            }
+            const checked = taskMatch[1].toLowerCase() === 'x';
+            html += `<li><input type="checkbox" ${checked ? 'checked' : ''} disabled><span>${inline(taskMatch[2])}</span></li>\n`;
+            continue;
+        }
+        
         // Unordered list
         const ulm = line.match(/^\s*[-*+]\s+(.+)$/);
         if (ulm) {
@@ -337,6 +435,58 @@ function parseMarkdown(text) {
     }
     
     flushAll();
+    
+    // Add footnotes section if any exist
+    if (footnotes.length > 0) {
+        html += '<div class="footnotes">\n<ol>\n';
+        footnotes.forEach(fn => {
+            html += `<li id="fn-${fn.id}">
+                <p>${inline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>↩</a></p>
+            </li>\n`;
+        });
+        html += '</ol>\n</div>\n';
+    }
+    
+    return html;
+}
+
+function parseTable(lines) {
+    if (lines.length < 2) return '';
+    
+    const rows = lines.map(line => {
+        return line.trim()
+            .replace(/^\|/, '')
+            .replace(/\|$/, '')
+            .split('|')
+            .map(cell => cell.trim());
+    });
+    
+    // Check for separator line
+    const hasSeparator = rows[1] && rows[1].every(cell => /^:?-+:?$/.test(cell));
+    
+    if (!hasSeparator) {
+        // Not a valid table
+        return lines.map(line => `<p>${inline(line)}</p>\n`).join('');
+    }
+    
+    const headerRow = rows[0];
+    const bodyRows = rows.slice(2);
+    
+    let html = '<table>\n<thead>\n<tr>\n';
+    headerRow.forEach(cell => {
+        html += `<th>${inline(cell)}</th>\n`;
+    });
+    html += '</tr>\n</thead>\n<tbody>\n';
+    
+    bodyRows.forEach(row => {
+        html += '<tr>\n';
+        row.forEach(cell => {
+            html += `<td>${inline(cell)}</td>\n`;
+        });
+        html += '</tr>\n';
+    });
+    
+    html += '</tbody>\n</table>\n';
     return html;
 }
 
@@ -355,9 +505,9 @@ function slugify(text) {
         .trim();
 }
 
-/* ========================================
+/* =============================================
    RENDERING
-   ======================================== */
+   ============================================= */
 
 function renderHome() {
     const app = document.getElementById('app');
@@ -383,7 +533,7 @@ function renderHome() {
     if (!state.posts.length) {
         app.innerHTML = `
             <div class="state fade-in">
-                <div class="state__icon">���</div>
+                <div class="state__icon">📝</div>
                 <h1 class="state__title">No posts yet</h1>
                 <p class="state__desc">Add markdown files to your posts/ directory to get started.</p>
             </div>
@@ -478,9 +628,9 @@ function renderPost(slug) {
     window.scrollTo(0, 0);
 }
 
-/* ========================================
+/* =============================================
    TABLE OF CONTENTS
-   ======================================== */
+   ============================================= */
 
 function generateTOC(html) {
     const temp = document.createElement('div');
@@ -519,9 +669,6 @@ function setupTOCHighlight() {
                 
                 links.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
-                
-                // Update URL without triggering route change
-                history.replaceState(null, '', `${window.location.hash.split('#')[0]}#${targetId}`);
             }
         });
     });
@@ -543,9 +690,9 @@ function setupTOCHighlight() {
     });
 }
 
-/* ========================================
+/* =============================================
    RECOMMENDATIONS
-   ======================================== */
+   ============================================= */
 
 function getRecommendations(currentSlug) {
     const others = state.posts.filter(p => p.slug !== currentSlug);
@@ -563,9 +710,39 @@ function getRecommendations(currentSlug) {
     `).join('');
 }
 
-/* ========================================
+/* =============================================
+   CODE COPY FUNCTIONALITY
+   ============================================= */
+
+function copyCode(button) {
+    const codeBlock = button.closest('.code-block');
+    const code = codeBlock.querySelector('code').textContent;
+    const copyText = button.querySelector('.copy-text');
+    
+    navigator.clipboard.writeText(code).then(() => {
+        const originalText = copyText.textContent;
+        copyText.textContent = 'Copied!';
+        button.classList.add('copied');
+        
+        setTimeout(() => {
+            copyText.textContent = originalText;
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        copyText.textContent = 'Failed';
+        setTimeout(() => {
+            copyText.textContent = 'Copy';
+        }, 2000);
+    });
+}
+
+// Make it globally available
+window.copyCode = copyCode;
+
+/* =============================================
    SKELETONS
-   ======================================== */
+   ============================================= */
 
 function skeletonHome() {
     return `
@@ -597,9 +774,9 @@ function skeletonPost() {
     `;
 }
 
-/* ========================================
+/* =============================================
    UTILITIES
-   ======================================== */
+   ============================================= */
 
 function formatDate(str) {
     if (!str || str === '1970-01-01') return '';
