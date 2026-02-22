@@ -185,6 +185,21 @@ function parseFrontmatter(raw) {
     return { meta, content: match[2].trim() };
 }
 
+function esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function slugify(text) {
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+}
+
 function parseMarkdown(text) {
     if (!text) return '';
     
@@ -204,7 +219,8 @@ function parseMarkdown(text) {
     let inTable = false;
     let tableLines = [];
     
-    function inline(str) {
+    // Define inline processing function
+    const processInline = (str) => {
         // Footnotes - convert [^1] to superscript links
         str = str.replace(/\[\^(\w+)\]/g, (match, id) => {
             const existingRef = footnotes.find(fn => fn.id === id);
@@ -240,45 +256,45 @@ function parseMarkdown(text) {
         str = str.replace(/==(.+?)==/g, '<mark>$1</mark>');
         
         return str;
-    }
+    };
     
-    function flushPara() {
+    const flushPara = () => {
         if (paraLines.length) {
-            html += `<p>${inline(paraLines.join(' '))}</p>\n`;
+            html += `<p>${processInline(paraLines.join(' '))}</p>\n`;
             paraLines = [];
         }
-    }
+    };
     
-    function flushList() {
+    const flushList = () => {
         if (inList) {
             html += `</${listTag}>\n`;
             inList = false;
             listTag = '';
         }
-    }
+    };
     
-    function flushBQ() {
+    const flushBQ = () => {
         if (inBlockquote) {
-            html += `<p>${inline(bqLines.join(' '))}</p>\n</blockquote>\n`;
+            html += `<p>${processInline(bqLines.join(' '))}</p>\n</blockquote>\n`;
             inBlockquote = false;
             bqLines = [];
         }
-    }
+    };
     
-    function flushTable() {
+    const flushTable = () => {
         if (inTable && tableLines.length > 0) {
-            html += parseTable(tableLines);
+            html += parseTable(tableLines, processInline);
             tableLines = [];
             inTable = false;
         }
-    }
+    };
     
-    function flushAll() {
+    const flushAll = () => {
         flushPara();
         flushList();
         flushBQ();
         flushTable();
-    }
+    };
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -288,10 +304,9 @@ function parseMarkdown(text) {
             if (inCode) {
                 const codeContent = esc(codeLines.join('\n'));
                 const langDisplay = codeLang || 'text';
-                const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
                 
                 html += `
-                    <div class="code-block" id="${codeId}">
+                    <div class="code-block">
                         <div class="code-block__header">
                             <span class="code-block__lang">${langDisplay}</span>
                             <button class="code-block__copy" onclick="copyCode(this)" aria-label="Copy code">
@@ -357,7 +372,7 @@ function parseMarkdown(text) {
             const lvl = hm[1].length;
             const text = hm[2];
             const id = slugify(text);
-            html += `<h${lvl} id="${id}">${inline(text)}</h${lvl}>\n`;
+            html += `<h${lvl} id="${id}">${processInline(text)}</h${lvl}>\n`;
             continue;
         }
         
@@ -394,7 +409,7 @@ function parseMarkdown(text) {
                 listTag = 'ul-task';
             }
             const checked = taskMatch[1].toLowerCase() === 'x';
-            html += `<li><input type="checkbox" ${checked ? 'checked' : ''} disabled><span>${inline(taskMatch[2])}</span></li>\n`;
+            html += `<li><input type="checkbox" ${checked ? 'checked' : ''} disabled><span>${processInline(taskMatch[2])}</span></li>\n`;
             continue;
         }
         
@@ -409,7 +424,7 @@ function parseMarkdown(text) {
                 inList = true;
                 listTag = 'ul';
             }
-            html += `<li>${inline(ulm[1])}</li>\n`;
+            html += `<li>${processInline(ulm[1])}</li>\n`;
             continue;
         }
         
@@ -424,7 +439,7 @@ function parseMarkdown(text) {
                 inList = true;
                 listTag = 'ol';
             }
-            html += `<li>${inline(olm[1])}</li>\n`;
+            html += `<li>${processInline(olm[1])}</li>\n`;
             continue;
         }
         
@@ -441,7 +456,7 @@ function parseMarkdown(text) {
         html += '<div class="footnotes">\n<ol>\n';
         footnotes.forEach(fn => {
             html += `<li id="fn-${fn.id}">
-                <p>${inline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>↩</a></p>
+                <p>${processInline(fn.text)} <a href="#fnref-${fn.id}" data-footnote-backref>��</a></p>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
@@ -450,7 +465,7 @@ function parseMarkdown(text) {
     return html;
 }
 
-function parseTable(lines) {
+function parseTable(lines, inlineProcessor) {
     if (lines.length < 2) return '';
     
     const rows = lines.map(line => {
@@ -465,8 +480,8 @@ function parseTable(lines) {
     const hasSeparator = rows[1] && rows[1].every(cell => /^:?-+:?$/.test(cell));
     
     if (!hasSeparator) {
-        // Not a valid table
-        return lines.map(line => `<p>${inline(line)}</p>\n`).join('');
+        // Not a valid table, treat as paragraphs
+        return lines.map(line => `<p>${inlineProcessor(line)}</p>\n`).join('');
     }
     
     const headerRow = rows[0];
@@ -474,35 +489,20 @@ function parseTable(lines) {
     
     let html = '<table>\n<thead>\n<tr>\n';
     headerRow.forEach(cell => {
-        html += `<th>${inline(cell)}</th>\n`;
+        html += `<th>${inlineProcessor(cell)}</th>\n`;
     });
     html += '</tr>\n</thead>\n<tbody>\n';
     
     bodyRows.forEach(row => {
         html += '<tr>\n';
         row.forEach(cell => {
-            html += `<td>${inline(cell)}</td>\n`;
+            html += `<td>${inlineProcessor(cell)}</td>\n`;
         });
         html += '</tr>\n';
     });
     
     html += '</tbody>\n</table>\n';
     return html;
-}
-
-function esc(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function slugify(text) {
-    return text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
 }
 
 /* =============================================
