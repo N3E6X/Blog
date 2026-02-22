@@ -69,7 +69,7 @@ function greet(name) {
 
 [Visit Example](https://example.com)
 
-![Sample Image](https://via.placeholder.com/400x200)
+![Sample Image]([https://via.placeholder.com/400x200](https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_16x9.jpg?w=1200))
 
 ## Tables
 
