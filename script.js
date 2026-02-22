@@ -557,7 +557,6 @@ function parseMarkdown(text) {
                 <div class="fn-content">
                     <p>${processInline(fn.text)}</p>
                 </div>
-                <a href="#fnref-${fn.id}" class="fn-back">↑</a>
             </li>\n`;
         });
         html += '</ol>\n</div>\n';
