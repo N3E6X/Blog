@@ -1048,11 +1048,6 @@ button {
         gap: var(--space-3);
     }
     
-    .article .footnotes li .fn-back {
-        grid-column: 2;
-        margin-top: var(--space-1);
-    }
-}
 /* Responsive */
 @media (max-width: 640px) {
     .article .footnotes li {
@@ -1060,11 +1055,6 @@ button {
         gap: var(--space-3);
     }
     
-    .article .footnotes li .fn-back {
-        grid-column: 2;
-        justify-self: start;
-        margin-top: var(--space-2);
-    }
     
     .article .footnotes-header {
         padding: var(--space-4) var(--space-5);
