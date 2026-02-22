@@ -1,35 +1,85 @@
----
-title: Welcome to N3E6X
-date: 2025-01-15
-description: A showcase of all markdown features in this ultra-minimal blog system.
-tags: markdown, design, featured
----
+# MD Writer
 
-# Introduction
+A minimal markdown editor with all features.
 
-This is a **demonstration** of the N3E6X blog system, built with *pure* HTML, CSS, and JavaScript. No frameworks, no dependencies—just clean, fast code.
+## Text Formatting
 
-## Typography Showcase
+This is **bold text** and this is *italic text*.
 
-### Bold, Italic, and Strikethrough
+You can also use ~~strikethrough~~ for deleted text.
+| Header 1 | Header 2 | Header 3 |
+| --- | --- | --- |
+| Cell 1 | Cell 2 | Cell 3 |
+| Cell 4 | Cell 5 | Cell 6 |
+| Cell 4 | Cell 5 | Cell 6 |
+| Cell 4 | Cell 5 | Cell 6 |
+Use ==highlighted text== to draw attention.
 
-You can use **bold text**, *italic text*, ***bold and italic***, ~~strikethrough~~, and even ==highlighted text==.
+For scientific notation: H<sub>2</sub>O and E=mc<sup>2</sup>
+![alt text]()
+## Headers
 
-### Subscript and Superscript
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
 
-Chemical formulas like H~2~O and mathematical expressions like x^2^ are supported.
+## Lists
 
-## Code Examples
+### Unordered List
+- First item
+- Second item
+- Third item
 
-### Inline Code
+### Ordered List
+1. First step
+2. Second step
+3. Third step
 
-Use `const variable = value;` for inline code snippets.
+### Task List
+- [x] Completed task
+- [ ] Pending task
+- [ ] Another pending task
 
-### Code Blocks
+## Blockquotes
+
+> This is a blockquote.
+> Perfect for highlighting important information.
+
+## Code
+
+Inline `code` looks like this.
 
 ```javascript
 function greet(name) {
   return `Hello, ${name}!`;
 }
+```
 
-console.log(greet('World'));
+## Links & Images
+
+[Visit Example](https://example.com)
+
+![Sample Image](https://via.placeholder.com/400x200)
+
+## Tables
+
+| Feature | Status | Priority |
+| --- | --- | --- |
+| Headers | Done | High |
+| Lists | Done | High |
+| Tables | Done | Medium |
+
+---
+
+## Footnotes
+
+Here is a sentence with a footnote[^1].
+
+[^1]: This is the footnote content.
+
+---
+
+*Write. Style. Export.*
