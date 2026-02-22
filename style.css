@@ -950,7 +950,7 @@ button {
 }
 
 /* =============================================
-   FOOTNOTES / REFERENCES — BALANCED & SLEEK
+   FOOTNOTES / REFERENCES — FLAT & MINIMAL
    ============================================= */
 
 /* Footnote Reference in Text */
@@ -975,31 +975,13 @@ button {
     padding: 0 4px;
     border-radius: var(--radius-full);
     margin: 0 1px;
-    transition: all 0.2s var(--timing);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.article sup a.footnote-ref:hover {
-    transform: scale(1.15);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.article sup a.footnote-ref.highlight {
-    animation: footnote-pulse 0.6s ease;
-}
-
-@keyframes footnote-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.3); }
 }
 
 /* References Container */
 .article .footnotes {
     margin-top: var(--space-16);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--border);
 }
 
 /* References Header */
@@ -1007,22 +989,20 @@ button {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-5) var(--space-6);
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-6);
 }
 
 .article .footnotes-header i {
-    font-size: 0.875rem;
-    opacity: 0.5;
+    font-size: 0.75rem;
+    opacity: 0.4;
 }
 
 .article .footnotes-header span {
-    font-size: var(--fs-sm);
+    font-size: var(--fs-xs);
     font-weight: var(--fw-semibold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--muted);
+    opacity: 0.4;
 }
 
 /* References List */
@@ -1030,88 +1010,53 @@ button {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
 /* Individual Reference Item */
 .article .footnotes li {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: start;
+    grid-template-columns: 24px 1fr auto;
+    align-items: baseline;
     gap: var(--space-4);
-    padding: var(--space-5) var(--space-6);
-    border-bottom: 1px solid var(--border);
-    transition: background 0.2s var(--timing);
 }
 
-.article .footnotes li:last-child {
-    border-bottom: none;
-}
-
-.article .footnotes li:hover {
-    background: var(--surface-2);
-}
-
-.article .footnotes li.highlight {
-    background: var(--surface-2);
-}
-
-/* Reference Number Badge */
+/* Reference Number */
 .article .footnotes li .fn-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    font-size: 0.6875rem;
+    font-size: var(--fs-xs);
     font-weight: var(--fw-bold);
-    color: var(--bg);
-    background: var(--fg);
-    border-radius: var(--radius-full);
-    flex-shrink: 0;
+    color: var(--muted);
 }
 
 /* Reference Content */
-.article .footnotes li .fn-content {
-    flex: 1;
-    min-width: 0;
-}
-
 .article .footnotes li .fn-content p {
     margin: 0;
     font-size: var(--fs-sm);
     line-height: 1.7;
-    color: var(--fg);
-    opacity: 0.8;
-}
-
-/* Return Button */
-.article .footnotes li .fn-back {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-medium);
     color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
+}
+
+/* Return Link */
+.article .footnotes li .fn-back {
+    font-size: var(--fs-xs);
+    color: var(--subtle);
     text-decoration: none;
-    transition: all 0.2s var(--timing);
-    white-space: nowrap;
-    flex-shrink: 0;
 }
 
-.article .footnotes li .fn-back i {
-    font-size: 0.5rem;
+/* Responsive */
+@media (max-width: 640px) {
+    .article .footnotes li {
+        grid-template-columns: 20px 1fr;
+        gap: var(--space-3);
+    }
+    
+    .article .footnotes li .fn-back {
+        grid-column: 2;
+        margin-top: var(--space-1);
+    }
 }
-
-.article .footnotes li .fn-back:hover {
-    color: var(--bg);
-    background: var(--fg);
-    border-color: var(--fg);
-}
-
 /* Responsive */
 @media (max-width: 640px) {
     .article .footnotes li {
