@@ -259,7 +259,6 @@ a, button {
 .nav__theme:hover {
     background: var(--surface);
     border-color: var(--border-strong);
-    transform: rotate(180deg);
 }
 
 .theme-icon {
